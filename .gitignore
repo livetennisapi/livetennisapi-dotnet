@@ -1,0 +1,21 @@
+# Build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+*.nupkg
+*.snupkg
+
+# Rider / VS
+.idea/
+.vs/
+*.user
+
+# NuGet
+.nuget/
+
+# Secrets — never commit an API key
+*.key
+.env
+appsettings.local.json

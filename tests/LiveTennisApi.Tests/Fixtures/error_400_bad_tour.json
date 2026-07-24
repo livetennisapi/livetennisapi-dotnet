@@ -1,0 +1,10 @@
+{
+  "allowed": [
+    "atp",
+    "challenger",
+    "itf",
+    "juniors",
+    "wta"
+  ],
+  "error": "bad_tour"
+}

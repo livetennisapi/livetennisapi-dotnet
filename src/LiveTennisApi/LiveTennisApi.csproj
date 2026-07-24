@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Multi-target: netstandard2.0 for the broadest reach (Framework, Xamarin,
+         Unity, older Core) and net8.0 for the modern, trimmed/AOT-friendly path. -->
+    <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!-- NuGet package metadata -->
+  <PropertyGroup>
+    <PackageId>LiveTennisApi</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Live Tennis API</Authors>
+    <Company>Live Tennis API</Company>
+    <Product>Live Tennis API .NET Client</Product>
+    <Description>Official .NET client for the Live Tennis API — real-time tennis scores, players, fixtures and match-winner market prices for ATP, WTA, Challenger, ITF and juniors. Async, HttpClient- and IHttpClientFactory-friendly, with typed models and a typed exception hierarchy. Targets netstandard2.0 and net8.0.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://livetennisapi.com</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/livetennisapi/livetennisapi-dotnet</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>tennis;tennis-api;live-scores;livescore;sports;sports-api;sports-data;atp;wta;itf;challenger;odds;api-client;sdk</PackageTags>
+    <PackageReleaseNotes>Initial release: full FREE-tier surface (matches, scores, players, fixtures) plus PRO/ULTRA endpoints (events, markets, analysis) and a typed exception hierarchy.</PackageReleaseNotes>
+    <Copyright>Copyright (c) Live Tennis API</Copyright>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <!-- Pack the README (required by PackageReadmeFile) and the LICENSE file. The
+       license *metadata* is the MIT expression above; the file ships too, so the
+       full text is present inside the package. -->
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+    <None Include="../../LICENSE" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <!-- System.Text.Json is in-box on net8.0; netstandard2.0 needs the package. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
+
+</Project>
