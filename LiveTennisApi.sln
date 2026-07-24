@@ -1,0 +1,45 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{CDDD84AD-5C09-43AB-B359-80753E9C7F45}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiveTennisApi", "src\LiveTennisApi\LiveTennisApi.csproj", "{4D7AAF7F-A016-46F5-AC28-A17423F0CBE1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{54BD0233-9C94-49AB-88C6-A6832653F597}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiveTennisApi.Tests", "tests\LiveTennisApi.Tests\LiveTennisApi.Tests.csproj", "{E7CA6EFA-BB58-4189-B93D-33380B735D03}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{4BB66E98-AD00-4084-8B46-07F219FC5E7F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiveTennisApi.LiveSmoke", "samples\LiveTennisApi.LiveSmoke\LiveTennisApi.LiveSmoke.csproj", "{7FB7E146-F51E-41BF-932D-742E7571DC96}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4D7AAF7F-A016-46F5-AC28-A17423F0CBE1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D7AAF7F-A016-46F5-AC28-A17423F0CBE1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D7AAF7F-A016-46F5-AC28-A17423F0CBE1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D7AAF7F-A016-46F5-AC28-A17423F0CBE1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E7CA6EFA-BB58-4189-B93D-33380B735D03}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E7CA6EFA-BB58-4189-B93D-33380B735D03}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E7CA6EFA-BB58-4189-B93D-33380B735D03}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E7CA6EFA-BB58-4189-B93D-33380B735D03}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7FB7E146-F51E-41BF-932D-742E7571DC96}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7FB7E146-F51E-41BF-932D-742E7571DC96}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7FB7E146-F51E-41BF-932D-742E7571DC96}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7FB7E146-F51E-41BF-932D-742E7571DC96}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{4D7AAF7F-A016-46F5-AC28-A17423F0CBE1} = {CDDD84AD-5C09-43AB-B359-80753E9C7F45}
+		{E7CA6EFA-BB58-4189-B93D-33380B735D03} = {54BD0233-9C94-49AB-88C6-A6832653F597}
+		{7FB7E146-F51E-41BF-932D-742E7571DC96} = {4BB66E98-AD00-4084-8B46-07F219FC5E7F}
+	EndGlobalSection
+EndGlobal
