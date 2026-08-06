@@ -33,7 +33,7 @@ foreach (var m in live.Data)
 }
 ```
 
-Get a free key (no card, 1000 requests/day) at
+Get a free key (no card, 100 requests/day) at
 <https://livetennisapi.com/subscribe/free>.
 
 ### With `IHttpClientFactory`
