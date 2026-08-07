@@ -32,6 +32,26 @@ namespace LiveTennisApi.Models
         [JsonPropertyName("tournament")]
         public string? Tournament { get; init; }
 
+        /// <summary>
+        /// The tour, in the <b>same vocabulary the <c>tour</c> query filter
+        /// accepts</b> (<c>atp</c>, <c>wta</c>, <c>challenger</c>, <c>itf</c>,
+        /// <c>juniors</c>) — a match selected by <c>?tour=X</c> always carries
+        /// that value here. <c>null</c> when the feed never stated a tour or the
+        /// event has no public tour name (exhibitions, team and mixed events).
+        /// Safe to group and filter on; never parse the tournament name for this.
+        /// Unlike <see cref="Player.Tour"/>, which stays opaque and granular.
+        /// </summary>
+        [JsonPropertyName("tour")]
+        public string? Tour { get; init; }
+
+        /// <summary>
+        /// Stable tournament identity — one id per tournament × event type,
+        /// stable across seasons. <c>null</c> on matches ingested before the
+        /// catalogue covered their tournament.
+        /// </summary>
+        [JsonPropertyName("tournament_id")]
+        public string? TournamentId { get; init; }
+
         /// <summary>Surface: <c>hard</c>, <c>clay</c>, <c>grass</c>, or <c>null</c>.</summary>
         [JsonPropertyName("surface")]
         public string? Surface { get; init; }
@@ -47,6 +67,16 @@ namespace LiveTennisApi.Models
         /// <summary>Round, or <c>null</c>.</summary>
         [JsonPropertyName("round")]
         public string? Round { get; init; }
+
+        /// <summary>
+        /// The round in a controlled vocabulary (<c>F</c>, <c>SF</c>, <c>QF</c>,
+        /// <c>R16</c>, <c>R32</c>, <c>R64</c>, <c>R128</c>, <c>RR</c>, <c>BR</c>,
+        /// <c>Q</c>, <c>Q1</c>–<c>Q4</c>, <c>ER</c>), normalized from the
+        /// free-text <see cref="Round"/> label. <c>null</c> when the label is
+        /// unrecognised — never guessed.
+        /// </summary>
+        [JsonPropertyName("round_code")]
+        public string? RoundCode { get; init; }
 
         /// <summary>Lifecycle status: <c>upcoming</c>, <c>live</c>, <c>completed</c>, or <c>cancelled</c>.</summary>
         [JsonPropertyName("status")]
@@ -76,6 +106,22 @@ namespace LiveTennisApi.Models
         [JsonPropertyName("winner")]
         public int? Winner { get; init; }
 
+        /// <summary>
+        /// Which player retired or conceded the walkover (<c>1</c> or <c>2</c>).
+        /// Completed matches only — present only when <see cref="EventStatus"/> is
+        /// <c>Retired</c> or <c>Walk Over</c> and the winner is derivable; the
+        /// withdrawer is the loser by the rules of the sport.
+        /// </summary>
+        [JsonPropertyName("withdrew")]
+        public int? Withdrew { get; init; }
+
+        /// <summary>
+        /// What point-by-point data is held for this match. Populated on
+        /// <c>/history/matches</c> list rows only; <c>null</c> elsewhere.
+        /// </summary>
+        [JsonPropertyName("tape")]
+        public TapeInfo? Tape { get; init; }
+
         /// <summary>Embedded market. <b>PRO+ only</b>; <c>null</c> below that tier.</summary>
         [JsonPropertyName("market")]
         public Market? Market { get; init; }
@@ -83,5 +129,33 @@ namespace LiveTennisApi.Models
         /// <summary>Embedded analysis. <b>ULTRA only</b>; <c>null</c> below that tier.</summary>
         [JsonPropertyName("analysis")]
         public Analysis? Analysis { get; init; }
+    }
+
+    /// <summary>
+    /// Tape coverage summary carried on <c>/history/matches</c> list rows, so a
+    /// whole page can be qualified in one call instead of one request per match.
+    /// </summary>
+    public sealed record TapeInfo : LiveTennisModel
+    {
+        /// <summary>
+        /// How the tape came to exist: <c>from_start</c>, <c>partial</c>,
+        /// <c>reconstructed</c>, <c>reconstructed_partial</c>, or <c>none</c>.
+        /// <c>from_start</c> says how the rows were obtained (watched live from
+        /// 0-0), not that the tape is "complete".
+        /// </summary>
+        [JsonPropertyName("coverage")]
+        public string? Coverage { get; init; }
+
+        /// <summary>
+        /// Rows observed (watched live). Not the length of the tape that will be
+        /// served — use <see cref="HistoryTapeMeta.Rows"/> on the per-match tape
+        /// for that.
+        /// </summary>
+        [JsonPropertyName("rows")]
+        public int? Rows { get; init; }
+
+        /// <summary>Reconstructed rows available for this match.</summary>
+        [JsonPropertyName("reconstructed_rows")]
+        public int? ReconstructedRows { get; init; }
     }
 }
