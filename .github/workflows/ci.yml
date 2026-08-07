@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - name: Truth pin
+        run: sh scripts/truthcheck.sh
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
