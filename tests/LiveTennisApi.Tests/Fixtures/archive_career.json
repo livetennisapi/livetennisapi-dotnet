@@ -1,0 +1,39 @@
+{
+  "player": { "name": "Pete Sampras" },
+  "span": { "first": "1988-02-01", "last": "2002-08-26" },
+  "record": {
+    "wins": 762,
+    "losses": 222,
+    "titles": 64,
+    "by_surface": {
+      "hard": { "wins": 427, "losses": 122 },
+      "grass": { "wins": 101, "losses": 20 },
+      "clay": { "wins": 90, "losses": 70 }
+    },
+    "by_level": {
+      "G": { "wins": 203, "losses": 38 },
+      "M": { "wins": 190, "losses": 70 }
+    }
+  },
+  "by_year": [
+    { "year": 1990, "wins": 51, "losses": 20 },
+    { "year": 1993, "wins": 85, "losses": 16 }
+  ],
+  "serve": {
+    "matches_with_stats": 908,
+    "aces": 8858,
+    "double_faults": 2569,
+    "serve_points": 63232,
+    "first_in": 37209,
+    "first_won": 30165,
+    "second_won": 14921,
+    "serve_games": 10007,
+    "bp_saved": 2951,
+    "bp_faced": 4310,
+    "first_in_pct": 58.8,
+    "first_won_pct": 81.1,
+    "second_won_pct": 57.3,
+    "bp_saved_pct": 68.5,
+    "aces_per_match": 9.8
+  }
+}

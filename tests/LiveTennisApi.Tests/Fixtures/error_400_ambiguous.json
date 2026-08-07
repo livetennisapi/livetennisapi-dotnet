@@ -1,0 +1,5 @@
+{
+  "error": "ambiguous_name",
+  "detail": "The fragment 'williams' matches more than one player.",
+  "allowed": ["Serena Williams", "Venus Williams"]
+}

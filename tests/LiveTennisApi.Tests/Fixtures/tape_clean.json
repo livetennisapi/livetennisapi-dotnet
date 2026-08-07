@@ -1,0 +1,94 @@
+{
+  "match": {
+    "id": 15012,
+    "tournament": "Wimbledon",
+    "tour": "atp",
+    "tournament_id": "wimbledon-atp",
+    "surface": "grass",
+    "indoor": false,
+    "format": "BO5",
+    "round": "Final",
+    "round_code": "F",
+    "status": "completed",
+    "event_status": null,
+    "is_doubles": false,
+    "scheduled_time": "2023-07-16T13:00:00Z",
+    "players": {
+      "p1": { "id": 810, "name": "Carlos Alcaraz", "tour": "atp" },
+      "p2": { "id": 12, "name": "Novak Djokovic", "tour": "atp" }
+    },
+    "score": {
+      "sets": [3, 2],
+      "games": [[1, 7, 6, 3, 6], [6, 6, 1, 6, 4]],
+      "points": [],
+      "server": null,
+      "is_tiebreak": false,
+      "win_probability_p1": null,
+      "danger": null,
+      "timestamp": "2023-07-16T17:53:00Z"
+    },
+    "winner": 1
+  },
+  "tape": [
+    {
+      "sets": [0, 0],
+      "games": [[0], [0]],
+      "points": ["15", "0"],
+      "server": 2,
+      "is_tiebreak": false,
+      "win_probability_p1": 0.38,
+      "danger": 0.1,
+      "timestamp": "2023-07-16T13:04:12Z",
+      "point_winner": 1
+    },
+    {
+      "sets": [0, 0],
+      "games": [[0], [0]],
+      "points": ["15", "15"],
+      "server": 2,
+      "is_tiebreak": false,
+      "win_probability_p1": null,
+      "danger": null,
+      "timestamp": null,
+      "point_winner": 2
+    },
+    {
+      "sets": [0, 1],
+      "games": [[1, 0], [6, 0]],
+      "points": ["0", "0"],
+      "server": 1,
+      "is_tiebreak": false,
+      "win_probability_p1": 0.31,
+      "danger": 0.2,
+      "timestamp": "2023-07-16T13:38:05Z",
+      "point_winner": null
+    }
+  ],
+  "tiebreaks": [
+    null,
+    { "p1": 8, "p2": 6 },
+    null,
+    null,
+    null
+  ],
+  "profiles": [
+    {
+      "win_probability_p1": 0.42,
+      "expected_closeness": 0.8,
+      "volatility_rating": "high",
+      "stage": "pregame",
+      "created_at": "2023-07-16T11:00:00Z"
+    }
+  ],
+  "meta": {
+    "match_id": 15012,
+    "rows": 3,
+    "coverage": "from_start",
+    "point_source": "mixed",
+    "raw_rows": 5,
+    "unique_states": 3,
+    "sequence": "clean",
+    "from_archive": true,
+    "generated_at": "2026-08-07T12:00:00Z"
+  }
+}

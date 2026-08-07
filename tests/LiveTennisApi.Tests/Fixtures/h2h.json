@@ -1,0 +1,59 @@
+{
+  "players": {
+    "p1": { "name": "Novak Djokovic" },
+    "p2": { "name": "Rafael Nadal" }
+  },
+  "totals": {
+    "p1_wins": 31,
+    "p2_wins": 29,
+    "meetings": 60,
+    "undecided": 1
+  },
+  "by_surface": {
+    "hard": { "p1": 20, "p2": 7 },
+    "clay": { "p1": 9, "p2": 20 },
+    "grass": { "p1": 2, "p2": 2 },
+    "unknown": { "p1": 0, "p2": 0 }
+  },
+  "meetings": [
+    {
+      "era": "current",
+      "date": "2024-07-29",
+      "tournament": "Olympics",
+      "level": null,
+      "round": "Second Round",
+      "round_code": "R32",
+      "surface": "clay",
+      "score": null,
+      "outcome": "completed",
+      "winner": 1,
+      "match_id": 18234
+    },
+    {
+      "era": "archive",
+      "date": "2022-05-22",
+      "tournament": "Roland Garros",
+      "level": "G",
+      "round": "QF",
+      "round_code": null,
+      "surface": "clay",
+      "score": "6-2 4-6 6-2 7-6(4)",
+      "outcome": "completed",
+      "winner": 2,
+      "archive_match_id": 90211
+    },
+    {
+      "era": "archive",
+      "date": "2016-01-16",
+      "tournament": "Doha",
+      "level": "A",
+      "round": "F",
+      "round_code": null,
+      "surface": "hard",
+      "score": "W/O",
+      "outcome": "walkover",
+      "winner": null,
+      "archive_match_id": 74102
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "data": [
+    {
+      "id": 30101,
+      "tournament": "ATP Masters 1000 Cincinnati (USA)",
+      "tour": "atp",
+      "tournament_id": "cincinnati-atp",
+      "surface": "hard",
+      "indoor": false,
+      "format": "BO3",
+      "round": "Round of 16",
+      "round_code": "R16",
+      "status": "completed",
+      "event_status": "Retired",
+      "is_doubles": false,
+      "scheduled_time": "2026-08-06T18:00:00Z",
+      "players": {
+        "p1": { "id": 810, "name": "Carlos Alcaraz", "tour": "atp" },
+        "p2": { "id": 44, "name": "Some Opponent", "tour": "atp" }
+      },
+      "score": {
+        "sets": [1, 0],
+        "games": [[6, 2], [3, 1]],
+        "points": [],
+        "server": null,
+        "is_tiebreak": false,
+        "timestamp": "2026-08-06T19:21:00Z"
+      },
+      "winner": 1,
+      "withdrew": 2,
+      "tape": {
+        "coverage": "from_start",
+        "rows": 141,
+        "reconstructed_rows": 0
+      }
+    },
+    {
+      "id": 30102,
+      "tournament": "Exhibition Kooyong",
+      "tour": null,
+      "tournament_id": null,
+      "surface": "hard",
+      "indoor": false,
+      "format": "BO3",
+      "round": "Qualifying",
+      "round_code": "Q",
+      "status": "completed",
+      "event_status": null,
+      "is_doubles": false,
+      "scheduled_time": "2026-08-05T10:00:00Z",
+      "players": {
+        "p1": { "id": 900, "name": "Player One", "tour": "atp" },
+        "p2": { "id": 901, "name": "Player Two", "tour": "atp" }
+      },
+      "score": {
+        "sets": [2, 0],
+        "games": [[6, 6], [4, 2]],
+        "points": [],
+        "server": null,
+        "is_tiebreak": false,
+        "timestamp": "2026-08-05T11:40:00Z"
+      },
+      "winner": 1,
+      "withdrew": null,
+      "tape": {
+        "coverage": "reconstructed",
+        "rows": 0,
+        "reconstructed_rows": 96
+      }
+    }
+  ],
+  "meta": {
+    "limit": 50,
+    "offset": 0,
+    "count": 2,
+    "total": null,
+    "has_more": false
+  }
+}

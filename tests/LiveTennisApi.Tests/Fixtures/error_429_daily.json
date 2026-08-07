@@ -1,0 +1,10 @@
+{
+  "error": "rate_limited",
+  "detail": "Daily quota exhausted.",
+  "scope": "day",
+  "limit_per_day": 100,
+  "resets_at": "2026-08-07T21:00:00Z",
+  "upgrade_url": "https://livetennisapi.com/subscribe/upgrade",
+  "tier": "basic",
+  "price": "$9.99/mo"
+}
