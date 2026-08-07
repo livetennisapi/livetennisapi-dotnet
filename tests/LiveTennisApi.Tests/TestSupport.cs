@@ -20,6 +20,7 @@ namespace LiveTennisApi.Tests
             Method = request.Method;
             Headers = request.Headers
                 .ToDictionary(h => h.Key, h => string.Join(", ", h.Value), StringComparer.OrdinalIgnoreCase);
+            Body = request.Content?.ReadAsStringAsync().GetAwaiter().GetResult();
         }
 
         public Uri Uri { get; }
@@ -27,6 +28,8 @@ namespace LiveTennisApi.Tests
         public HttpMethod Method { get; }
 
         public IReadOnlyDictionary<string, string> Headers { get; }
+
+        public string? Body { get; }
 
         public string Query => Uri.Query;
     }

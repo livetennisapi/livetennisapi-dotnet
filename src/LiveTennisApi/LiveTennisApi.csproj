@@ -14,7 +14,7 @@
   <!-- NuGet package metadata -->
   <PropertyGroup>
     <PackageId>LiveTennisApi</PackageId>
-    <Version>1.1.0</Version>
+    <Version>1.2.0</Version>
     <Authors>Live Tennis API</Authors>
     <Company>Live Tennis API</Company>
     <Product>Live Tennis API .NET Client</Product>
@@ -25,7 +25,7 @@
     <RepositoryType>git</RepositoryType>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>tennis;tennis-api;live-scores;livescore;sports;sports-api;sports-data;atp;wta;itf;challenger;odds;api-client;sdk</PackageTags>
-    <PackageReleaseNotes>1.1.0: typed coverage for /h2h, the 1968–2022 results archive, per-match tapes (point_winner + tiebreaks), in-play statistics, rankings (listing + per-player as-of), rally/charting shot data, /ws-token and /history/packages; new Match fields (tour, tournament_id, round_code, withdrew); abuse_throttled + daily-429 reset surfaced on exceptions.</PackageReleaseNotes>
+    <PackageReleaseNotes>1.2.0: full API parity with the public v1 spec — adds /tournaments, /usage, /matches/{id}/prices (bare ticks with synthetic/price_source tags) and webhooks CRUD (ULTRA, direct keys only, max 3, one-time secret), plus a 409 ConflictException and no-retry POST semantics.</PackageReleaseNotes>
     <Copyright>Copyright (c) 2026 Live Tennis API</Copyright>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
