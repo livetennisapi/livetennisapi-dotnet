@@ -3,8 +3,8 @@
 Official .NET client for the [Live Tennis API](https://livetennisapi.com) —
 real-time tennis scores, players, fixtures, deep match history and (on paid
 tiers) head-to-head, the 1968–2022 results archive, rankings, in-play
-statistics, rally/charting shot data, match events, market prices and model
-analysis for **ATP, WTA, Challenger, ITF and juniors**.
+statistics, rally/charting shot data, match events, market prices, webhooks and
+model analysis for **ATP, WTA, Challenger, ITF and juniors**.
 
 [![ci](https://github.com/livetennisapi/livetennisapi-dotnet/actions/workflows/ci.yml/badge.svg)](https://github.com/livetennisapi/livetennisapi-dotnet/actions/workflows/ci.yml)
 [![NuGet](https://img.shields.io/nuget/v/LiveTennisApi.svg)](https://www.nuget.org/packages/LiveTennisApi)
@@ -78,6 +78,9 @@ var client = new LiveTennisApiClient("twjp_your_key", new LiveTennisApiClientOpt
 | `SearchPlayersAsync(search, limit, offset)` | `/players` | FREE |
 | `GetPlayerAsync(playerId)` | `/players/{id}` | FREE |
 | `ListFixturesAsync(tour, limit, offset)` | `/fixtures` | FREE |
+| `ListTournamentsAsync(search, tour, …)` | `/tournaments` | FREE |
+| `GetTournamentAsync(tournamentId)` | `/tournaments/{id}` | FREE |
+| `GetUsageAsync()` | `/usage` | any (quota-exempt) |
 | `ListCompletedMatchesAsync(…, tour, players, from, to, country)` | `/history/matches` | BASIC² |
 | `GetMatchTapeAsync(matchId, sequence)` | `/history/matches/{id}` | BASIC² |
 | `GetHeadToHeadAsync(p1, p2)` | `/h2h` | BASIC² |
@@ -88,6 +91,7 @@ var client = new LiveTennisApiClient("twjp_your_key", new LiveTennisApiClientOpt
 | `ListMatchEventsAsync(matchId, limit, offset)` | `/matches/{id}/events` | PRO |
 | `ListMarketsAsync(matchId)` | `/markets` | PRO |
 | `GetMarketPricesAsync(matchId, limit)` | `/markets/{id}/prices` | PRO |
+| `ListMatchPricesAsync(matchId, limit, minutes)` | `/matches/{id}/prices` | PRO |
 | `ListRankingsAsync(system, asOf, …)` | `/rankings` (listing mode) | PRO |
 | `ListHistoryPackagesAsync(kind, year)` | `/history/packages` | PRO³ |
 | `GetHistoryPackageAsync(period, kind)` | `/history/packages/{period}` | PRO³ |
@@ -100,11 +104,23 @@ var client = new LiveTennisApiClient("twjp_your_key", new LiveTennisApiClientOpt
 | `GetChartingPlayerAsync(name, gender)` | `/charting/players` | ULTRA |
 | `GetChartingMatchAsync(chartingMatchId)` | `/charting/matches/{id}` | ULTRA |
 | `GetWsTokenAsync()` | `/ws-token` | ULTRA |
+| `CreateWebhookAsync(url, events)` | `POST /webhooks` | ULTRA⁴ |
+| `ListWebhooksAsync()` | `/webhooks` | ULTRA⁴ |
+| `DeleteWebhookAsync(webhookId)` | `DELETE /webhooks/{id}` | ULTRA⁴ |
 
 ¹ `status=completed` needs BASIC+ (or any History plan).
 ² Or any History plan — History grants work on a FREE core key.
 ³ `kind=rankings` and `year=` listings need ULTRA / History Business / a 1-year
 package.
+⁴ Direct keys only — a marketplace (RapidAPI) key gets `403 direct_key_required`.
+
+This covers **every path of the public v1 OpenAPI spec**. Deliberate
+exclusions: the undocumented gateway aliases (unstable, do not use); the
+server's HTML views and static assets (browser surfaces, not API); and the
+package **file downloads** — `GetHistoryPackageAsync` returns the manifest
+(filenames, sizes, SHA-256); stream the file itself with
+`GET /history/packages/{period}?format=jsonl|csv` using your own HTTP client,
+since a multi-GB download does not belong behind a JSON deserializer.
 
 ## Quotas
 
@@ -188,6 +204,26 @@ whole match. Works on live matches too.
 > finished matches (`Status == "finished"`). This is a known upstream quirk; the
 > client passes it through unfiltered.
 
+### Webhooks (ULTRA, direct keys only)
+
+The API POSTs the same frames the WebSocket sends to your HTTPS endpoint on
+every live score commit:
+
+```csharp
+var hook = await client.CreateWebhookAsync(
+    "https://example.com/hooks/tennis",
+    new[] { WebhookEvent.Score, WebhookEvent.BreakPoint });
+
+// hook.Secret is shown EXACTLY ONCE, on this response — store it now.
+// ListWebhooksAsync() never returns it again.
+```
+
+- **Max 3 webhooks per key** — a fourth registration throws
+  `ConflictException` (`409 webhook_limit`); delete one first.
+- The registration POST is **never retried automatically**, so a transient
+  failure cannot register the same webhook twice.
+- Verify deliveries against the stored signing secret.
+
 ## Errors
 
 Everything derives from `LiveTennisApiException` (carrying `StatusCode`, `Code`,
@@ -229,6 +265,7 @@ catch (UnauthorizedException)            // 401 — bad/missing key
 | `UnauthorizedException` | 401 |
 | `UpgradeRequiredException` | 403 (adds `RequiredTier`) |
 | `NotFoundException` | 404 (check `Code` — `not_charted` ≠ `not_found`) |
+| `ConflictException` | 409 (e.g. `webhook_limit`) |
 | `RateLimitedException` | 429 (adds `RetryAfterSeconds`, `ResetsAt` on the daily window) |
 | `AbuseThrottledException` | 429 `abuse_throttled` (adds `RetryAtEpoch`/`RetryAt`) |
 | `ServerException` | 5xx |
@@ -237,6 +274,7 @@ catch (UnauthorizedException)            // 401 — bad/missing key
 Transient failures (`429`, `5xx`) are retried automatically (default 2 attempts),
 honouring `Retry-After` — except a 429 whose `Retry-After` exceeds 60 s (a
 daily/abuse block), which is surfaced immediately rather than retried against.
+POST requests (webhook registration) are never retried; GET and DELETE are.
 
 ## Links
 
