@@ -128,6 +128,16 @@ namespace LiveTennisApi
         Rankings,
     }
 
+    /// <summary>An event family a webhook can subscribe to.</summary>
+    public enum WebhookEvent
+    {
+        /// <summary>Live score commits (the default).</summary>
+        Score,
+
+        /// <summary>Break-point alerts.</summary>
+        BreakPoint,
+    }
+
     /// <summary>Serialization helpers for the request-side enums.</summary>
     internal static class EnumExtensions
     {
@@ -224,6 +234,17 @@ namespace LiveTennisApi
                 case HistoryPackageKind.Tape: return "tape";
                 case HistoryPackageKind.Rankings: return "rankings";
                 default: throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unknown package kind.");
+            }
+        }
+
+        /// <summary>The wire value for a <see cref="WebhookEvent"/>.</summary>
+        public static string ToWireValue(this WebhookEvent webhookEvent)
+        {
+            switch (webhookEvent)
+            {
+                case WebhookEvent.Score: return "score";
+                case WebhookEvent.BreakPoint: return "break_point";
+                default: throw new ArgumentOutOfRangeException(nameof(webhookEvent), webhookEvent, "Unknown webhook event.");
             }
         }
     }

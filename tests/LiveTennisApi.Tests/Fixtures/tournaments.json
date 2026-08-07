@@ -1,0 +1,31 @@
+{
+  "data": [
+    {
+      "id": "wimbledon-atp",
+      "name": "Wimbledon",
+      "tour": "atp",
+      "surface": "grass",
+      "indoor": false,
+      "city": "London",
+      "country": "GB",
+      "category": "grand_slam"
+    },
+    {
+      "id": "w15-brisbane-wta",
+      "name": "W15 Brisbane",
+      "tour": "itf",
+      "surface": "hard",
+      "indoor": false,
+      "city": null,
+      "country": null,
+      "category": null
+    }
+  ],
+  "meta": {
+    "limit": 50,
+    "offset": 0,
+    "count": 2,
+    "total": 412,
+    "has_more": true
+  }
+}

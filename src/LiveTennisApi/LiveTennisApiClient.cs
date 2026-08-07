@@ -56,8 +56,10 @@ namespace LiveTennisApi
                 ("/rally", "ULTRA"),
                 ("/charting", "ULTRA"),
                 ("/ws-token", "ULTRA"),
+                ("/webhooks", "ULTRA"),
                 ("/events", "PRO"),
                 ("/markets", "PRO"),
+                ("/prices", "PRO"),
                 ("/history/packages", "PRO"),
                 ("/history", "BASIC"),
                 ("/h2h", "BASIC"),
@@ -735,6 +737,156 @@ namespace LiveTennisApi
                 new[] { Param("kind", kind == HistoryPackageKind.Tape ? null : kind.ToQueryValue()) },
                 cancellationToken);
 
+        /// <summary>
+        /// The tournament catalogue — the id space
+        /// <see cref="Match.TournamentId"/> joins, one row per tournament ×
+        /// event type, stable across seasons, in name order.
+        /// </summary>
+        /// <param name="search">Optional case-insensitive substring match on the tournament name.</param>
+        /// <param name="tour">Optional tour filter. Omit for all tours.</param>
+        /// <param name="limit">Page size, 1–200. Defaults to 50.</param>
+        /// <param name="offset">Page offset. Defaults to 0.</param>
+        /// <param name="cancellationToken">A token to cancel the request.</param>
+        /// <returns>A page of tournaments.</returns>
+        public Task<Page<Tournament>> ListTournamentsAsync(
+            string? search = null,
+            Tour? tour = null,
+            int limit = 50,
+            int offset = 0,
+            CancellationToken cancellationToken = default) =>
+            GetPageAsync<Tournament>(
+                "/tournaments",
+                new[]
+                {
+                    Param("search", search),
+                    Param("tour", tour?.ToQueryValue()),
+                    Param("limit", limit),
+                    Param("offset", offset),
+                },
+                cancellationToken);
+
+        /// <summary>One tournament by its stable id.</summary>
+        /// <param name="tournamentId">The <c>tournament_id</c> carried on match objects.</param>
+        /// <param name="cancellationToken">A token to cancel the request.</param>
+        /// <returns>The tournament, or <c>null</c> if the body was empty.</returns>
+        public Task<Tournament?> GetTournamentAsync(string tournamentId, CancellationToken cancellationToken = default) =>
+            GetAsync<Tournament>(
+                "/tournaments/" + Uri.EscapeDataString(tournamentId ?? throw new ArgumentNullException(nameof(tournamentId))),
+                null,
+                cancellationToken);
+
+        /// <summary>
+        /// Your own usage vs quota — tier, limits, today's calls (current to the
+        /// second) and a 30-day history. Works on every tier and the call itself
+        /// is quota-exempt.
+        /// </summary>
+        /// <param name="cancellationToken">A token to cancel the request.</param>
+        /// <returns>The usage summary, or <c>null</c> if the body was empty.</returns>
+        /// <remarks>
+        /// The per-minute window is on the <c>X-RateLimit-*</c> headers of every
+        /// response, not here — and the daily reset instant is only carried on
+        /// the daily-429 body (<see cref="RateLimitedException.ResetsAt"/>).
+        /// </remarks>
+        public Task<Usage?> GetUsageAsync(CancellationToken cancellationToken = default) =>
+            GetAsync<Usage>("/usage", null, cancellationToken);
+
+        /// <summary>
+        /// Bare price ticks of the match's mapped match-winner market, newest
+        /// first — no market wrapper. <b>PRO.</b>
+        /// </summary>
+        /// <param name="matchId">The match id.</param>
+        /// <param name="limit">Ticks to return, 1–500. Defaults to 100.</param>
+        /// <param name="minutes">Optional lookback window in minutes, 1–1440. Omit for unbounded.</param>
+        /// <param name="cancellationToken">A token to cancel the request.</param>
+        /// <returns>
+        /// The ticks. <c>Meta.HasMore</c> means the window was clipped at the
+        /// limit — there is no offset on this endpoint; raise the limit or
+        /// narrow the minutes window. <c>404</c> when the match has no mapped
+        /// market.
+        /// </returns>
+        public async Task<MatchPrices> ListMatchPricesAsync(
+            int matchId,
+            int limit = 100,
+            int? minutes = null,
+            CancellationToken cancellationToken = default)
+        {
+            var query = new List<KeyValuePair<string, string?>> { Param("limit", limit) };
+            if (minutes.HasValue)
+            {
+                query.Add(Param("minutes", minutes.Value));
+            }
+
+            var result = await GetAsync<MatchPrices>(
+                "/matches/" + matchId + "/prices", query, cancellationToken).ConfigureAwait(false);
+            return result ?? new MatchPrices();
+        }
+
+        /// <summary>
+        /// Registers an outbound webhook: the API POSTs the same frames the
+        /// WebSocket sends to your HTTPS endpoint on every live score commit.
+        /// <b>ULTRA, direct keys only.</b>
+        /// </summary>
+        /// <param name="url">The destination URL — HTTPS only, publicly routable.</param>
+        /// <param name="events">The events to subscribe to. Omit for the default (<c>score</c>).</param>
+        /// <param name="cancellationToken">A token to cancel the request.</param>
+        /// <returns>
+        /// The created webhook. <b><see cref="Webhook.Secret"/> is present only
+        /// on this response — it is shown exactly once</b>; store it before
+        /// letting the object go.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"><paramref name="url"/> is null.</exception>
+        /// <remarks>
+        /// Up to <b>3 webhooks per key</b>: a fourth registration is a
+        /// <c>409</c> <see cref="ConflictException"/> with code
+        /// <c>webhook_limit</c> — delete one first. On a marketplace
+        /// (RapidAPI) key the endpoint answers <c>403</c> with code
+        /// <c>direct_key_required</c>. This POST is never retried
+        /// automatically, so a transient failure cannot register the webhook
+        /// twice.
+        /// </remarks>
+        public Task<Webhook?> CreateWebhookAsync(
+            string url,
+            IEnumerable<WebhookEvent>? events = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (url is null)
+            {
+                throw new ArgumentNullException(nameof(url));
+            }
+
+            var payload = new Dictionary<string, object> { ["url"] = url };
+            if (events != null)
+            {
+                var names = new List<string>();
+                foreach (var webhookEvent in events)
+                {
+                    names.Add(webhookEvent.ToWireValue());
+                }
+
+                payload["events"] = names;
+            }
+
+            var body = JsonSerializer.Serialize(payload, LiveTennisJson.Options);
+            return SendAsync<Webhook>(HttpMethod.Post, "/webhooks", null, body, cancellationToken);
+        }
+
+        /// <summary>
+        /// Lists your webhooks. <b>ULTRA, direct keys only.</b> The signing
+        /// secret is <b>never</b> included here — it is shown only once, on the
+        /// registration response.
+        /// </summary>
+        /// <param name="cancellationToken">A token to cancel the request.</param>
+        /// <returns>Your webhooks (max 3).</returns>
+        public Task<Page<Webhook>> ListWebhooksAsync(CancellationToken cancellationToken = default) =>
+            GetPageAsync<Webhook>("/webhooks", new KeyValuePair<string, string?>[0], cancellationToken);
+
+        /// <summary>Removes one of your webhooks. <b>ULTRA, direct keys only.</b></summary>
+        /// <param name="webhookId">The webhook id.</param>
+        /// <param name="cancellationToken">A token to cancel the request.</param>
+        /// <returns>The deletion receipt (the deleted id), or <c>null</c> if the body was empty.</returns>
+        public Task<WebhookDeleted?> DeleteWebhookAsync(int webhookId, CancellationToken cancellationToken = default) =>
+            SendAsync<WebhookDeleted>(HttpMethod.Delete, "/webhooks/" + webhookId, null, null, cancellationToken);
+
         /// <summary>Upcoming scheduled fixtures, earliest first.</summary>
         /// <remarks>Note: this endpoint currently also returns some finished matches; they are passed through unfiltered.</remarks>
         /// <param name="tour">Optional tour filter. Omit for all tours.</param>
@@ -795,9 +947,19 @@ namespace LiveTennisApi
             return page ?? new Page<T>();
         }
 
-        private async Task<T?> GetAsync<T>(
+        private Task<T?> GetAsync<T>(
             string path,
             IEnumerable<KeyValuePair<string, string?>>? query,
+            CancellationToken cancellationToken,
+            string? requiredTier = null)
+            where T : class =>
+            SendAsync<T>(HttpMethod.Get, path, query, jsonBody: null, cancellationToken, requiredTier);
+
+        private async Task<T?> SendAsync<T>(
+            HttpMethod method,
+            string path,
+            IEnumerable<KeyValuePair<string, string?>>? query,
+            string? jsonBody,
             CancellationToken cancellationToken,
             string? requiredTier = null)
             where T : class
@@ -805,12 +967,18 @@ namespace LiveTennisApi
             ThrowIfDisposed();
             var url = BuildUrl(path, query);
 
+            // POST is not idempotent here (a retried webhook registration could
+            // register twice when the first attempt succeeded server-side after
+            // the response was lost), so it gets exactly one attempt. GET and
+            // DELETE are safe to retry.
+            var maxRetries = method == HttpMethod.Post ? 0 : _maxRetries;
+
             for (var attempt = 0; ; attempt++)
             {
                 HttpResponseMessage response;
                 try
                 {
-                    using var request = BuildRequest(url);
+                    using var request = BuildRequest(method, url, jsonBody);
                     response = await _http
                         .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
                         .ConfigureAwait(false);
@@ -822,7 +990,7 @@ namespace LiveTennisApi
                 catch (OperationCanceledException ex)
                 {
                     // Cancellation not requested by the caller ⇒ the HttpClient timeout fired.
-                    if (attempt >= _maxRetries)
+                    if (attempt >= maxRetries)
                     {
                         throw new ApiTimeoutException("Request to " + url + " timed out.", url, ex);
                     }
@@ -832,7 +1000,7 @@ namespace LiveTennisApi
                 }
                 catch (HttpRequestException ex)
                 {
-                    if (attempt >= _maxRetries)
+                    if (attempt >= maxRetries)
                     {
                         throw new ApiConnectionException("Could not reach " + url + ": " + ex.Message, url, ex);
                     }
@@ -853,7 +1021,7 @@ namespace LiveTennisApi
                     var retriableNow = ShouldRetry(status) &&
                         !(status == 429 && retryAfter.HasValue && retryAfter.Value > 60);
 
-                    if (retriableNow && attempt < _maxRetries)
+                    if (retriableNow && attempt < maxRetries)
                     {
                         await DelayAsync(Backoff(attempt, retryAfter), cancellationToken).ConfigureAwait(false);
                         continue;
@@ -869,11 +1037,16 @@ namespace LiveTennisApi
             }
         }
 
-        private HttpRequestMessage BuildRequest(string url)
+        private HttpRequestMessage BuildRequest(HttpMethod method, string url, string? jsonBody)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            var request = new HttpRequestMessage(method, url);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             request.Headers.TryAddWithoutValidation("User-Agent", _userAgent);
+
+            if (jsonBody != null)
+            {
+                request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+            }
 
             if (_authHeader == AuthHeader.Bearer)
             {

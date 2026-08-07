@@ -1,0 +1,21 @@
+{
+  "principal": "key_9f2c1a",
+  "tier": "pro",
+  "base_tier": "basic",
+  "tier_expires_at": "2026-08-14T00:00:00Z",
+  "channel": "direct",
+  "limits": {
+    "per_minute": 300,
+    "per_day": 10000
+  },
+  "today": {
+    "calls": 1231,
+    "errors": 4,
+    "remaining_day": 8769
+  },
+  "history": [
+    { "day": "2026-08-05", "calls": 9200, "errors": 12 },
+    { "day": "2026-08-06", "calls": 8100, "errors": 3 }
+  ],
+  "as_of": "2026-08-07T14:10:00Z"
+}

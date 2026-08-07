@@ -26,6 +26,19 @@ namespace LiveTennisApi.Models
         [JsonPropertyName("spread")]
         public double? Spread { get; init; }
 
+        /// <summary>Feed category, e.g. <c>prediction_market</c>, or <c>null</c>.</summary>
+        [JsonPropertyName("price_source")]
+        public string? PriceSource { get; init; }
+
+        /// <summary>
+        /// <c>true</c> = bid/ask were estimated from the mid (not a live order
+        /// book); <c>false</c> = real top-of-book; <c>null</c> = unknown (older
+        /// ticks). Tagged so a synthesised quote is never mistaken for a live
+        /// book.
+        /// </summary>
+        [JsonPropertyName("synthetic")]
+        public bool? Synthetic { get; init; }
+
         /// <summary>Tick time as an ISO 8601 UTC string, or <c>null</c>.</summary>
         [JsonPropertyName("timestamp")]
         public string? Timestamp { get; init; }

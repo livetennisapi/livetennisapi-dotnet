@@ -158,6 +158,19 @@ namespace LiveTennisApi
         }
     }
 
+    /// <summary>
+    /// <c>409</c> — the request conflicts with current state (for example
+    /// <c>webhook_limit</c>: 3 webhooks already registered; delete one first).
+    /// </summary>
+    public sealed class ConflictException : LiveTennisApiException
+    {
+        /// <summary>Initializes a new instance of the <see cref="ConflictException"/> class.</summary>
+        public ConflictException(string message, int statusCode, string? code, string? requestUri, string? body, IReadOnlyDictionary<string, string>? headers)
+            : base(message, statusCode, code, requestUri, body, headers)
+        {
+        }
+    }
+
     /// <summary><c>429</c> — the tier's rate-limit window was exceeded.</summary>
     /// <remarks>
     /// Two window scopes share this status. The per-minute window clears within
@@ -274,6 +287,8 @@ namespace LiveTennisApi
                     return new UpgradeRequiredException(message, status, code, requestUri, body, headers, requiredTier);
                 case 404:
                     return new NotFoundException(message, status, code, requestUri, body, headers);
+                case 409:
+                    return new ConflictException(message, status, code, requestUri, body, headers);
                 case 429:
                     return code == "abuse_throttled"
                         ? new AbuseThrottledException(message, status, code, requestUri, body, headers, retryAfterSeconds, retryAtEpoch)

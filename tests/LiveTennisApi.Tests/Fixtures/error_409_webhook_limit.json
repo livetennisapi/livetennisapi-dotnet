@@ -1,0 +1,4 @@
+{
+  "error": "webhook_limit",
+  "detail": "This key already has 3 webhooks registered. Delete one first."
+}
