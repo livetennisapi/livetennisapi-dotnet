@@ -1,0 +1,87 @@
+{
+  "data": [
+    {
+      "id": 143201,
+      "source_id": "1991-540-101",
+      "tour": "atp",
+      "level": "G",
+      "tournament": "Wimbledon",
+      "surface": "grass",
+      "draw_size": 128,
+      "event_date": "1991-06-24",
+      "round": "F",
+      "best_of": 5,
+      "minutes": 191,
+      "winner": {
+        "name": "Michael Stich",
+        "hand": "R",
+        "country": "ger",
+        "rank": 6,
+        "seed": 6,
+        "player_id": 101736,
+        "height_cm": 193,
+        "age": 22.7,
+        "entry": null
+      },
+      "loser": {
+        "name": "Boris Becker",
+        "hand": "R",
+        "country": "ger",
+        "rank": 2,
+        "seed": 2,
+        "player_id": 101414,
+        "height_cm": 190,
+        "age": 23.5,
+        "entry": null
+      },
+      "score": "6-4 7-6(4) 6-4",
+      "outcome": "completed",
+      "stats": null
+    },
+    {
+      "id": 88412,
+      "source_id": "1975-580-089",
+      "tour": "wta",
+      "level": "G",
+      "tournament": "US Open",
+      "surface": "clay",
+      "draw_size": 64,
+      "event_date": "1975-08-25",
+      "round": "SF",
+      "best_of": 3,
+      "minutes": null,
+      "winner": {
+        "name": "Chris Evert",
+        "hand": "R",
+        "country": "usa",
+        "rank": 1,
+        "seed": 1,
+        "player_id": 200002,
+        "height_cm": null,
+        "age": 20.7,
+        "entry": null
+      },
+      "loser": {
+        "name": "Martina Navratilova",
+        "hand": "L",
+        "country": "usa",
+        "rank": 3,
+        "seed": 3,
+        "player_id": 200128,
+        "height_cm": null,
+        "age": 18.8,
+        "entry": null
+      },
+      "score": "6-4 6-4",
+      "outcome": "completed",
+      "stats": null
+    }
+  ],
+  "meta": {
+    "limit": 50,
+    "offset": 0,
+    "count": 2,
+    "total": 1485752,
+    "has_more": true
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "error": "abuse_throttled",
+  "detail": "This key has repeatedly exceeded its rate limits. Fix the retry loop, then try again after the block lifts.",
+  "retry_at_epoch": 1786568400
+}
