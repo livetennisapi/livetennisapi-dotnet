@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-08-07
+
+Full API parity: every path of the public v1 OpenAPI spec now has a typed
+method (deliberate exclusions documented in the README).
+
+### Added
+
+- **Tournament catalogue**: `ListTournamentsAsync(search, tour)` and
+  `GetTournamentAsync(id)` (`/tournaments`, FREE) — the id space
+  `Match.TournamentId` joins, with curated city/country (ISO-3166 alpha-2) and
+  `category` (null where the catalogues don't agree, never guessed).
+- **Usage**: `GetUsageAsync()` (`/usage`, any tier, quota-exempt) — tier,
+  temporary-grant fields, limits, today's calls and the 30-day history.
+- **Bare price ticks**: `ListMatchPricesAsync(matchId, limit, minutes)`
+  (`/matches/{id}/prices`, PRO) — no market wrapper, limit up to 500,
+  minutes-bounded lookback, `Meta.HasMore` (no offset on this endpoint).
+- **Webhooks** (`/webhooks`, ULTRA, direct keys only): `CreateWebhookAsync`
+  (the `secret` is returned exactly once, on the 201 only),
+  `ListWebhooksAsync` (never includes the secret), `DeleteWebhookAsync`.
+  Max 3 per key — a fourth registration is a `409` `webhook_limit`.
+- **Price model**: `PriceSource` and `Synthetic` (true = bid/ask estimated
+  from mid; never mistake a synthesised quote for a live book).
+- **Errors**: `ConflictException` (409, e.g. `webhook_limit`).
+
+### Changed
+
+- The transport now supports POST/DELETE. POST requests are **never retried**
+  (a retried webhook registration could register twice when the first attempt
+  succeeded server-side after the response was lost); GET and DELETE keep the
+  existing retry policy.
+
 ## [1.1.0] - 2026-08-07
 
 ### Added
@@ -77,5 +108,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `JsonExtensionData` forward-compatibility net, a typed exception hierarchy,
   retry with jittered backoff, and `netstandard2.0`/`net8.0` targets.
 
+[1.2.0]: https://github.com/livetennisapi/livetennisapi-dotnet/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/livetennisapi/livetennisapi-dotnet/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/livetennisapi/livetennisapi-dotnet/releases/tag/v1.0.0
