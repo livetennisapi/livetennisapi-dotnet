@@ -159,13 +159,23 @@ namespace LiveTennisApi
     }
 
     /// <summary><c>429</c> — the tier's rate-limit window was exceeded.</summary>
-    public sealed class RateLimitedException : LiveTennisApiException
+    /// <remarks>
+    /// Two window scopes share this status. The per-minute window clears within
+    /// seconds — honour <see cref="RetryAfterSeconds"/>. The daily window
+    /// (<c>scope: "day"</c> in the body) clears at <see cref="ResetsAt"/>, an
+    /// absolute instant derived from the account's local midnight — not a fixed
+    /// UTC time, so read the instant rather than assuming one. A
+    /// chronic-over-cap block is the separate
+    /// <see cref="AbuseThrottledException"/> subtype.
+    /// </remarks>
+    public class RateLimitedException : LiveTennisApiException
     {
         /// <summary>Initializes a new instance of the <see cref="RateLimitedException"/> class.</summary>
-        public RateLimitedException(string message, int statusCode, string? code, string? requestUri, string? body, IReadOnlyDictionary<string, string>? headers, double? retryAfterSeconds)
+        public RateLimitedException(string message, int statusCode, string? code, string? requestUri, string? body, IReadOnlyDictionary<string, string>? headers, double? retryAfterSeconds, string? resetsAt = null)
             : base(BuildMessage(message, retryAfterSeconds), statusCode, code, requestUri, body, headers)
         {
             RetryAfterSeconds = retryAfterSeconds;
+            ResetsAt = resetsAt;
         }
 
         /// <summary>
@@ -174,10 +184,58 @@ namespace LiveTennisApi
         /// </summary>
         public double? RetryAfterSeconds { get; }
 
+        /// <summary>
+        /// When the <b>daily</b> quota window resets, as the ISO 8601 UTC instant
+        /// from the response body (<c>resets_at</c>), or <c>null</c> on a
+        /// per-minute 429. The instant is derived from the account's local
+        /// midnight — never assume a fixed UTC reset time.
+        /// </summary>
+        public string? ResetsAt { get; }
+
+        /// <summary><see cref="ResetsAt"/> parsed, or <c>null</c> when absent or unparseable.</summary>
+        public DateTimeOffset? ResetsAtTime =>
+            DateTimeOffset.TryParse(
+                ResetsAt,
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal,
+                out var parsed)
+                ? parsed
+                : (DateTimeOffset?)null;
+
         private static string BuildMessage(string message, double? retryAfter) =>
             retryAfter is null
                 ? message
                 : message + " — retry after " + retryAfter.Value.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) + "s";
+    }
+
+    /// <summary>
+    /// <c>429</c> with code <c>abuse_throttled</c> — the key was blocked for
+    /// chronically exceeding its caps (typically for 24 hours).
+    /// </summary>
+    /// <remarks>
+    /// This is not the ordinary rate-limit window: retrying does not help until
+    /// <see cref="RetryAt"/>. It usually means a retry loop is hammering the API
+    /// after 429s instead of backing off — fix the loop rather than rescheduling
+    /// the request.
+    /// </remarks>
+    public sealed class AbuseThrottledException : RateLimitedException
+    {
+        /// <summary>Initializes a new instance of the <see cref="AbuseThrottledException"/> class.</summary>
+        public AbuseThrottledException(string message, int statusCode, string? code, string? requestUri, string? body, IReadOnlyDictionary<string, string>? headers, double? retryAfterSeconds, long? retryAtEpoch)
+            : base(message, statusCode, code, requestUri, body, headers, retryAfterSeconds)
+        {
+            RetryAtEpoch = retryAtEpoch;
+        }
+
+        /// <summary>
+        /// When the block lifts, as Unix seconds (the body's
+        /// <c>retry_at_epoch</c>), or <c>null</c> when the body carried none.
+        /// </summary>
+        public long? RetryAtEpoch { get; }
+
+        /// <summary><see cref="RetryAtEpoch"/> as a <see cref="DateTimeOffset"/>, or <c>null</c>.</summary>
+        public DateTimeOffset? RetryAt =>
+            RetryAtEpoch.HasValue ? DateTimeOffset.FromUnixTimeSeconds(RetryAtEpoch.Value) : (DateTimeOffset?)null;
     }
 
     /// <summary><c>5xx</c> — the API failed to serve the request.</summary>
@@ -201,7 +259,9 @@ namespace LiveTennisApi
             string? body,
             IReadOnlyDictionary<string, string> headers,
             string? requiredTier,
-            double? retryAfterSeconds)
+            double? retryAfterSeconds,
+            string? resetsAt = null,
+            long? retryAtEpoch = null)
         {
             int status = (int)statusCode;
             switch (status)
@@ -215,7 +275,9 @@ namespace LiveTennisApi
                 case 404:
                     return new NotFoundException(message, status, code, requestUri, body, headers);
                 case 429:
-                    return new RateLimitedException(message, status, code, requestUri, body, headers, retryAfterSeconds);
+                    return code == "abuse_throttled"
+                        ? new AbuseThrottledException(message, status, code, requestUri, body, headers, retryAfterSeconds, retryAtEpoch)
+                        : new RateLimitedException(message, status, code, requestUri, body, headers, retryAfterSeconds, resetsAt);
                 default:
                     return status >= 500
                         ? new ServerException(message, status, code, requestUri, body, headers)

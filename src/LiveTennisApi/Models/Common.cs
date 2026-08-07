@@ -31,11 +31,25 @@ namespace LiveTennisApi.Models
 
         /// <summary>
         /// The number of items on <b>this page</b> — not the total across all
-        /// pages. A short page (fewer items than the requested limit) is the only
-        /// reliable end-of-data signal.
+        /// pages. Prefer <see cref="HasMore"/> as the end-of-data signal rather
+        /// than comparing this to the requested limit.
         /// </summary>
         [JsonPropertyName("count")]
         public int? Count { get; init; }
+
+        /// <summary>
+        /// Size of the whole filtered set. <c>null</c> when it cannot be counted
+        /// cheaply (for example <c>/matches?status=completed</c>).
+        /// </summary>
+        [JsonPropertyName("total")]
+        public int? Total { get; init; }
+
+        /// <summary>
+        /// Whether more results exist beyond this page. Read this rather than
+        /// comparing <see cref="Count"/> to the limit.
+        /// </summary>
+        [JsonPropertyName("has_more")]
+        public bool? HasMore { get; init; }
     }
 
     /// <summary>A single page of a list endpoint: <c>{ data, meta }</c>.</summary>

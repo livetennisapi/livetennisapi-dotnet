@@ -49,6 +49,85 @@ namespace LiveTennisApi
         Completed,
     }
 
+    /// <summary>
+    /// The <c>tour</c> filter accepted by the deep-archive endpoints
+    /// (<c>/history/archive/*</c>). The 1968–2022 results archive covers the two
+    /// main tours only, so this is deliberately narrower than <see cref="Tour"/>.
+    /// </summary>
+    public enum ArchiveTour
+    {
+        /// <summary>ATP archive records.</summary>
+        Atp,
+
+        /// <summary>WTA archive records.</summary>
+        Wta,
+    }
+
+    /// <summary>A ranking system accepted by <c>/rankings</c>.</summary>
+    /// <remarks>
+    /// Systems are never collapsed into a single "rank" — they are not
+    /// comparable. ATP/WTA and the ITF circuits carry rank+points; UTR carries a
+    /// rating with null rank and points (it is a rating, not a ranking), and has
+    /// no listing mode.
+    /// </remarks>
+    public enum RankingSystem
+    {
+        /// <summary>ATP singles ranking.</summary>
+        Atp,
+
+        /// <summary>WTA singles ranking.</summary>
+        Wta,
+
+        /// <summary>ITF junior circuit ranking.</summary>
+        ItfJuniors,
+
+        /// <summary>ITF men's World Tennis Tour ranking.</summary>
+        ItfMen,
+
+        /// <summary>ITF women's World Tennis Tour ranking.</summary>
+        ItfWomen,
+
+        /// <summary>UTR rating (no rank/points, no listing mode).</summary>
+        Utr,
+    }
+
+    /// <summary>The gender filter accepted by the rally and charting endpoints.</summary>
+    public enum Gender
+    {
+        /// <summary>Men's matches (<c>M</c> / <c>men</c> on the wire).</summary>
+        Men,
+
+        /// <summary>Women's matches (<c>W</c> / <c>women</c> on the wire).</summary>
+        Women,
+    }
+
+    /// <summary>The <c>?sequence=</c> mode of the per-match tape.</summary>
+    public enum TapeSequence
+    {
+        /// <summary>
+        /// Every row as committed — deliberately non-monotonic, since independent
+        /// sources race and a higher-trust one may correct a lower-trust one
+        /// backwards.
+        /// </summary>
+        Raw,
+
+        /// <summary>
+        /// One row per distinct score state, keeping the last assertion of each.
+        /// Only clean rows carry <see cref="Models.HistoryTapeRow.PointWinner"/>.
+        /// </summary>
+        Clean,
+    }
+
+    /// <summary>The package family of <c>/history/packages</c>.</summary>
+    public enum HistoryPackageKind
+    {
+        /// <summary>Point-by-point match tapes (the default family).</summary>
+        Tape,
+
+        /// <summary>As-of ranking records. <b>ULTRA.</b></summary>
+        Rankings,
+    }
+
     /// <summary>Serialization helpers for the request-side enums.</summary>
     internal static class EnumExtensions
     {
@@ -75,6 +154,76 @@ namespace LiveTennisApi
                 case MatchStatus.Upcoming: return "upcoming";
                 case MatchStatus.Completed: return "completed";
                 default: throw new ArgumentOutOfRangeException(nameof(status), status, "Unknown match status.");
+            }
+        }
+
+        /// <summary>The lowercase wire value for an <see cref="ArchiveTour"/> filter.</summary>
+        public static string ToQueryValue(this ArchiveTour tour)
+        {
+            switch (tour)
+            {
+                case ArchiveTour.Atp: return "atp";
+                case ArchiveTour.Wta: return "wta";
+                default: throw new ArgumentOutOfRangeException(nameof(tour), tour, "Unknown archive tour filter.");
+            }
+        }
+
+        /// <summary>The wire value for a <see cref="RankingSystem"/>.</summary>
+        public static string ToQueryValue(this RankingSystem system)
+        {
+            switch (system)
+            {
+                case RankingSystem.Atp: return "atp";
+                case RankingSystem.Wta: return "wta";
+                case RankingSystem.ItfJuniors: return "itf_jt";
+                case RankingSystem.ItfMen: return "itf_mt";
+                case RankingSystem.ItfWomen: return "itf_wt";
+                case RankingSystem.Utr: return "utr";
+                default: throw new ArgumentOutOfRangeException(nameof(system), system, "Unknown ranking system.");
+            }
+        }
+
+        /// <summary>The <c>M</c>/<c>W</c> wire value the rally endpoints accept.</summary>
+        public static string ToRallyQueryValue(this Gender gender)
+        {
+            switch (gender)
+            {
+                case Gender.Men: return "M";
+                case Gender.Women: return "W";
+                default: throw new ArgumentOutOfRangeException(nameof(gender), gender, "Unknown gender filter.");
+            }
+        }
+
+        /// <summary>The <c>men</c>/<c>women</c> wire value the charting endpoints accept.</summary>
+        public static string ToChartingQueryValue(this Gender gender)
+        {
+            switch (gender)
+            {
+                case Gender.Men: return "men";
+                case Gender.Women: return "women";
+                default: throw new ArgumentOutOfRangeException(nameof(gender), gender, "Unknown gender filter.");
+            }
+        }
+
+        /// <summary>The lowercase wire value for a <see cref="TapeSequence"/>.</summary>
+        public static string ToQueryValue(this TapeSequence sequence)
+        {
+            switch (sequence)
+            {
+                case TapeSequence.Raw: return "raw";
+                case TapeSequence.Clean: return "clean";
+                default: throw new ArgumentOutOfRangeException(nameof(sequence), sequence, "Unknown tape sequence.");
+            }
+        }
+
+        /// <summary>The lowercase wire value for a <see cref="HistoryPackageKind"/>.</summary>
+        public static string ToQueryValue(this HistoryPackageKind kind)
+        {
+            switch (kind)
+            {
+                case HistoryPackageKind.Tape: return "tape";
+                case HistoryPackageKind.Rankings: return "rankings";
+                default: throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unknown package kind.");
             }
         }
     }

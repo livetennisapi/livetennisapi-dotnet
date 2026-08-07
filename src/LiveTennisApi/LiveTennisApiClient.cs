@@ -16,8 +16,10 @@ using LiveTennisApi.Models;
 namespace LiveTennisApi
 {
     /// <summary>
-    /// A client for the Live Tennis API — real-time scores, players, fixtures and
-    /// (on paid tiers) events, market prices and model analysis.
+    /// A client for the Live Tennis API — real-time scores, players, fixtures
+    /// and (on paid tiers) history and tapes, head-to-head, the 1968–2022
+    /// results archive, rankings, in-play statistics, rally/charting data,
+    /// events, market prices and model analysis.
     /// </summary>
     /// <remarks>
     /// <para>Create one directly with your key:</para>
@@ -42,14 +44,23 @@ namespace LiveTennisApi
     public sealed class LiveTennisApiClient : IDisposable
     {
         private const int MaxLimit = 200;
+        private const int MaxPlayerFilters = 50;
 
+        // Order matters: the first matching marker wins, so the more specific
+        // paths (e.g. /rally, /history/packages) sit above the general /history.
         private static readonly IReadOnlyList<(string Marker, string Tier)> TierRequirements =
             new (string, string)[]
             {
                 ("/analysis", "ULTRA"),
+                ("/statistics", "ULTRA"),
+                ("/rally", "ULTRA"),
+                ("/charting", "ULTRA"),
+                ("/ws-token", "ULTRA"),
                 ("/events", "PRO"),
                 ("/markets", "PRO"),
+                ("/history/packages", "PRO"),
                 ("/history", "BASIC"),
+                ("/h2h", "BASIC"),
             };
 
         private static readonly string ClientVersion =
@@ -131,29 +142,50 @@ namespace LiveTennisApi
         public Task<HealthStatus?> HealthAsync(CancellationToken cancellationToken = default) =>
             GetAsync<HealthStatus>("/health", null, cancellationToken);
 
-        /// <summary>Lists matches by lifecycle status, optionally restricted to one tour.</summary>
+        /// <summary>Lists matches by lifecycle status, with optional filters.</summary>
         /// <param name="status">Lifecycle status. Defaults to <see cref="MatchStatus.Live"/>.</param>
         /// <param name="tour">Optional tour filter. Omit for all tours.</param>
         /// <param name="limit">Page size, 1–200. Defaults to 50.</param>
         /// <param name="offset">Page offset. Defaults to 0.</param>
+        /// <param name="players">
+        /// Optional player ids, max 50 — matches where any of them is either
+        /// participant (deduplicated union). An unknown id returns an empty
+        /// list, not an error.
+        /// </param>
+        /// <param name="from">Earliest play date: <c>YYYY-MM-DD</c> or ISO 8601 UTC datetime. A bare date is a UTC day boundary.</param>
+        /// <param name="to">Latest play date (a bare date includes the whole UTC day); must not precede <paramref name="from"/>.</param>
+        /// <param name="country">
+        /// Lowercase 3-letter country code (IOC-style, e.g. <c>ned</c>,
+        /// <c>sui</c> — the vocabulary <see cref="Player.Country"/> returns, not
+        /// ISO-3166) — matches where either participant has that country.
+        /// </param>
         /// <param name="cancellationToken">A token to cancel the request.</param>
         /// <returns>A page of matches, each with its latest score.</returns>
+        /// <exception cref="ArgumentException">More than 50 player ids were supplied.</exception>
         public Task<Page<Match>> ListMatchesAsync(
             MatchStatus status = MatchStatus.Live,
             Tour? tour = null,
             int limit = 50,
             int offset = 0,
-            CancellationToken cancellationToken = default) =>
-            GetPageAsync<Match>(
-                "/matches",
-                new[]
-                {
-                    Param("status", status.ToQueryValue()),
-                    Param("tour", tour?.ToQueryValue()),
-                    Param("limit", limit),
-                    Param("offset", offset),
-                },
-                cancellationToken);
+            IEnumerable<int>? players = null,
+            string? from = null,
+            string? to = null,
+            string? country = null,
+            CancellationToken cancellationToken = default)
+        {
+            var query = new List<KeyValuePair<string, string?>>
+            {
+                Param("status", status.ToQueryValue()),
+                Param("tour", tour?.ToQueryValue()),
+            };
+            AddPlayerParams(query, players);
+            query.Add(Param("from", from));
+            query.Add(Param("to", to));
+            query.Add(Param("country", country));
+            query.Add(Param("limit", limit));
+            query.Add(Param("offset", offset));
+            return GetPageAsync<Match>("/matches", query, cancellationToken);
+        }
 
         /// <summary>Full match detail. Embeds <c>market</c> at PRO and <c>analysis</c> at ULTRA.</summary>
         /// <param name="matchId">The match id.</param>
@@ -241,18 +273,466 @@ namespace LiveTennisApi
                 new[] { Param("limit", limit) },
                 cancellationToken);
 
-        /// <summary>Completed matches, newest first, with a derived <c>winner</c>. <b>BASIC.</b></summary>
+        /// <summary>
+        /// Completed matches, newest first, with a derived <c>winner</c> and each
+        /// match's tape coverage (<see cref="Match.Tape"/>). <b>BASIC, or any
+        /// History plan.</b>
+        /// </summary>
         /// <param name="limit">Page size, 1–200. Defaults to 50.</param>
         /// <param name="offset">Page offset. Defaults to 0.</param>
+        /// <param name="tour">Optional tour filter. Omit for all tours.</param>
+        /// <param name="players">Optional player ids, max 50 — matches where any of them is either participant.</param>
+        /// <param name="from">Earliest play date: <c>YYYY-MM-DD</c> or ISO 8601 UTC datetime.</param>
+        /// <param name="to">Latest play date (a bare date includes the whole UTC day).</param>
+        /// <param name="country">Lowercase 3-letter country code (IOC-style) — either participant.</param>
         /// <param name="cancellationToken">A token to cancel the request.</param>
         /// <returns>A page of completed matches.</returns>
+        /// <exception cref="ArgumentException">More than 50 player ids were supplied.</exception>
         public Task<Page<Match>> ListCompletedMatchesAsync(
             int limit = 50,
             int offset = 0,
+            Tour? tour = null,
+            IEnumerable<int>? players = null,
+            string? from = null,
+            string? to = null,
+            string? country = null,
+            CancellationToken cancellationToken = default)
+        {
+            var query = new List<KeyValuePair<string, string?>>
+            {
+                Param("tour", tour?.ToQueryValue()),
+            };
+            AddPlayerParams(query, players);
+            query.Add(Param("from", from));
+            query.Add(Param("to", to));
+            query.Add(Param("country", country));
+            query.Add(Param("limit", limit));
+            query.Add(Param("offset", offset));
+            return GetPageAsync<Match>("/history/matches", query, cancellationToken);
+        }
+
+        /// <summary>
+        /// The per-match tape: the point-by-point score sequence + per-point
+        /// model probabilities. <b>BASIC, or any History plan.</b> Works on a
+        /// <b>live</b> match, not only a completed one.
+        /// </summary>
+        /// <param name="matchId">The match id (the same id space as <c>/matches</c>).</param>
+        /// <param name="sequence">
+        /// <see cref="TapeSequence.Raw"/> (default) is every committed row —
+        /// deliberately non-monotonic. <see cref="TapeSequence.Clean"/> is one
+        /// row per distinct score state, and is the only mode whose rows carry
+        /// <see cref="HistoryTapeRow.PointWinner"/>.
+        /// </param>
+        /// <param name="cancellationToken">A token to cancel the request.</param>
+        /// <returns>Match header + chronological tape + model profiles + coverage meta, or <c>null</c> if the body was empty.</returns>
+        public Task<HistoryTape?> GetMatchTapeAsync(
+            int matchId,
+            TapeSequence sequence = TapeSequence.Raw,
             CancellationToken cancellationToken = default) =>
-            GetPageAsync<Match>(
-                "/history/matches",
+            GetAsync<HistoryTape>(
+                "/history/matches/" + matchId,
+                new[] { Param("sequence", sequence.ToQueryValue()) },
+                cancellationToken);
+
+        /// <summary>
+        /// The head-to-head record between two players across the results
+        /// archive (1968–2022) and our own completed matches (2023→).
+        /// <b>BASIC, or any History plan.</b>
+        /// </summary>
+        /// <param name="p1">First player name (fragment, min 3 chars).</param>
+        /// <param name="p2">Second player name (fragment, min 3 chars).</param>
+        /// <param name="cancellationToken">A token to cancel the request.</param>
+        /// <returns>The record; empty totals when no player matches the names.</returns>
+        /// <remarks>
+        /// A fragment matching more than one player is refused with a <c>400</c>
+        /// <c>ambiguous_name</c> (<see cref="BadRequestException"/>) listing the
+        /// candidates in the body.
+        /// </remarks>
+        public Task<HeadToHead?> GetHeadToHeadAsync(string p1, string p2, CancellationToken cancellationToken = default) =>
+            GetAsync<HeadToHead>(
+                "/h2h",
+                new[] { Param("p1", p1), Param("p2", p2) },
+                cancellationToken);
+
+        /// <summary>
+        /// Deep historical results, 1968–2022: winner/loser-shaped records with
+        /// final score, round, seeds, and the players' ranks at the time.
+        /// <b>BASIC, or any History plan.</b> A separate id space from
+        /// <c>/matches</c>.
+        /// </summary>
+        /// <param name="tour">Optional archive tour filter (ATP/WTA only).</param>
+        /// <param name="name">Case-insensitive substring match on either player's name (min 3 chars).</param>
+        /// <param name="from">Earliest tournament start date (<c>YYYY-MM-DD</c>).</param>
+        /// <param name="to">Latest tournament start date (<c>YYYY-MM-DD</c>).</param>
+        /// <param name="round">Round code: <c>F</c>, <c>SF</c>, <c>QF</c>, <c>R16</c>, <c>R32</c>, <c>R64</c>, <c>R128</c>, <c>RR</c>, <c>BR</c>, <c>Q1</c>–<c>Q4</c>, <c>ER</c>.</param>
+        /// <param name="level">Source tier code: <c>G</c>, <c>M</c>, <c>A</c>, <c>F</c>, <c>D</c>, <c>C</c>, <c>O</c>, or a futures category code.</param>
+        /// <param name="limit">Page size, 1–200. Defaults to 50.</param>
+        /// <param name="offset">Page offset. Defaults to 0.</param>
+        /// <param name="cancellationToken">A token to cancel the request.</param>
+        /// <returns>A page of archive results, newest tournament first.</returns>
+        public Task<Page<ArchiveMatch>> ListArchiveMatchesAsync(
+            ArchiveTour? tour = null,
+            string? name = null,
+            string? from = null,
+            string? to = null,
+            string? round = null,
+            string? level = null,
+            int limit = 50,
+            int offset = 0,
+            CancellationToken cancellationToken = default) =>
+            GetPageAsync<ArchiveMatch>(
+                "/history/archive/matches",
+                new[]
+                {
+                    Param("tour", tour?.ToQueryValue()),
+                    Param("name", name),
+                    Param("from", from),
+                    Param("to", to),
+                    Param("round", round),
+                    Param("level", level),
+                    Param("limit", limit),
+                    Param("offset", offset),
+                },
+                cancellationToken);
+
+        /// <summary>
+        /// One archive result, with serve statistics where the era recorded them
+        /// (<c>stats</c> is <c>null</c> for most pre-1991 rows — never
+        /// synthesised). <b>BASIC, or any History plan.</b>
+        /// </summary>
+        /// <param name="archiveId">The archive record id.</param>
+        /// <param name="cancellationToken">A token to cancel the request.</param>
+        /// <returns>The archive record, or <c>null</c> if the body was empty.</returns>
+        public Task<ArchiveMatch?> GetArchiveMatchAsync(int archiveId, CancellationToken cancellationToken = default) =>
+            GetAsync<ArchiveMatch>("/history/archive/matches/" + archiveId, null, cancellationToken);
+
+        /// <summary>
+        /// Archive player bios — hand, date of birth, country, height,
+        /// career-high. <b>BASIC, or any History plan.</b> Own id space; never a
+        /// roster id.
+        /// </summary>
+        /// <param name="name">Case-insensitive substring filter (min 3 chars).</param>
+        /// <param name="tour">Optional archive tour filter (ATP/WTA only).</param>
+        /// <param name="limit">Page size, 1–200. Defaults to 50.</param>
+        /// <param name="offset">Page offset. Defaults to 0.</param>
+        /// <param name="cancellationToken">A token to cancel the request.</param>
+        /// <returns>A page of archive people, ordered by name.</returns>
+        public Task<Page<ArchivePlayerBio>> ListArchivePlayersAsync(
+            string? name = null,
+            ArchiveTour? tour = null,
+            int limit = 50,
+            int offset = 0,
+            CancellationToken cancellationToken = default) =>
+            GetPageAsync<ArchivePlayerBio>(
+                "/history/archive/players",
+                new[]
+                {
+                    Param("name", name),
+                    Param("tour", tour?.ToQueryValue()),
+                    Param("limit", limit),
+                    Param("offset", offset),
+                },
+                cancellationToken);
+
+        /// <summary>
+        /// One player's whole archive career (1968–2022): W-L record, titles and
+        /// the summed serve-stat block — sums and ratios of sums only, nothing
+        /// modelled. <b>BASIC, or any History plan.</b>
+        /// </summary>
+        /// <param name="name">Player name (fragment, min 3 chars — must resolve to one person).</param>
+        /// <param name="cancellationToken">A token to cancel the request.</param>
+        /// <returns>The career aggregate, or <c>null</c> if the body was empty.</returns>
+        /// <remarks>Ambiguous fragments are refused with a <c>400</c> <c>ambiguous_name</c> listing candidates.</remarks>
+        public Task<ArchiveCareer?> GetArchiveCareerAsync(string name, CancellationToken cancellationToken = default) =>
+            GetAsync<ArchiveCareer>(
+                "/history/archive/career",
+                new[] { Param("name", name) },
+                cancellationToken);
+
+        /// <summary>
+        /// In-play statistics for one match — aces, double faults, serve split,
+        /// hold/break %, break points, service and return points, in two
+        /// deliberately unmerged families (derived vs measured). <b>ULTRA.</b>
+        /// </summary>
+        /// <param name="matchId">The match id.</param>
+        /// <param name="cancellationToken">A token to cancel the request.</param>
+        /// <returns>
+        /// The statistics with their own coverage and <c>as_of</c>, or
+        /// <c>null</c> if the body was empty. When nothing is held the endpoint
+        /// returns <c>200</c> with null <see cref="MatchStatistics.Players"/>,
+        /// not <c>404</c>.
+        /// </returns>
+        public Task<MatchStatistics?> GetMatchStatisticsAsync(int matchId, CancellationToken cancellationToken = default) =>
+            GetAsync<MatchStatistics>("/matches/" + matchId + "/statistics", null, cancellationToken);
+
+        /// <summary>
+        /// The full published ranking table in rank order for one system — the
+        /// newest week at or before <paramref name="asOf"/>. <b>PRO.</b>
+        /// </summary>
+        /// <param name="system">
+        /// The system to list. <see cref="RankingSystem.Utr"/> has no listing (a
+        /// rating, not a ranking).
+        /// </param>
+        /// <param name="asOf">Optional as-of date (<c>YYYY-MM-DD</c>). Omit for the latest week.</param>
+        /// <param name="limit">Page size, 1–200. Defaults to 50.</param>
+        /// <param name="offset">Page offset. Defaults to 0.</param>
+        /// <param name="cancellationToken">A token to cancel the request.</param>
+        /// <returns>The table in rank order; rows carry <c>player_name</c> as published and a null <c>player_id</c> for players outside the roster.</returns>
+        public async Task<RankingsResult> ListRankingsAsync(
+            RankingSystem system,
+            string? asOf = null,
+            int limit = 50,
+            int offset = 0,
+            CancellationToken cancellationToken = default)
+        {
+            var result = await GetAsync<RankingsResult>(
+                "/rankings",
+                new[]
+                {
+                    Param("system", system.ToQueryValue()),
+                    Param("as_of", asOf),
+                    Param("limit", limit),
+                    Param("offset", offset),
+                },
+                cancellationToken,
+                requiredTier: "PRO").ConfigureAwait(false);
+            return result ?? new RankingsResult();
+        }
+
+        /// <summary>
+        /// Per-player point-in-time ranking records: per system, the newest
+        /// record effective on or before <paramref name="asOf"/> — never one
+        /// dated after it. <b>ULTRA.</b>
+        /// </summary>
+        /// <param name="playerIds">Player ids, 1–50.</param>
+        /// <param name="systems">Optional systems to restrict to. Omit for all.</param>
+        /// <param name="asOf">Optional as-of date (<c>YYYY-MM-DD</c>). Omit for the latest known record.</param>
+        /// <param name="limit">Page size, 1–200. Defaults to 50.</param>
+        /// <param name="offset">Page offset. Defaults to 0.</param>
+        /// <param name="cancellationToken">A token to cancel the request.</param>
+        /// <returns>Ranking records in force at <paramref name="asOf"/>, with coverage meta.</returns>
+        /// <exception cref="ArgumentException">No player ids, or more than 50, were supplied.</exception>
+        /// <remarks>
+        /// Every other ranking field in this API is the player's <b>current</b>
+        /// value joined at read time; this endpoint is the point-in-time answer.
+        /// Check <c>Meta.Coverage.OldestAvailable</c> before trusting an empty
+        /// result — ITF and UTR history begins 2026-07-29.
+        /// </remarks>
+        public async Task<RankingsResult> GetPlayerRankingsAsync(
+            IEnumerable<int> playerIds,
+            IEnumerable<RankingSystem>? systems = null,
+            string? asOf = null,
+            int limit = 50,
+            int offset = 0,
+            CancellationToken cancellationToken = default)
+        {
+            if (playerIds is null)
+            {
+                throw new ArgumentNullException(nameof(playerIds));
+            }
+
+            var query = new List<KeyValuePair<string, string?>>();
+            var count = 0;
+            foreach (var id in playerIds)
+            {
+                count++;
+                if (count > MaxPlayerFilters)
+                {
+                    throw new ArgumentException("At most " + MaxPlayerFilters + " player ids are accepted.", nameof(playerIds));
+                }
+
+                query.Add(Param("player", id));
+            }
+
+            if (count == 0)
+            {
+                throw new ArgumentException("At least one player id is required — for the rank-ordered listing use ListRankingsAsync.", nameof(playerIds));
+            }
+
+            if (systems != null)
+            {
+                foreach (var system in systems)
+                {
+                    query.Add(Param("system", system.ToQueryValue()));
+                }
+            }
+
+            query.Add(Param("as_of", asOf));
+            query.Add(Param("limit", limit));
+            query.Add(Param("offset", offset));
+
+            var result = await GetAsync<RankingsResult>("/rankings", query, cancellationToken, requiredTier: "ULTRA")
+                .ConfigureAwait(false);
+            return result ?? new RankingsResult();
+        }
+
+        /// <summary>
+        /// Charted matches with shot-by-shot data, newest first. <b>ULTRA.</b>
+        /// Rally construction is the layer below the tape: the tape says what
+        /// the score became after each point, this says how the point was
+        /// played. Own id space — most charted matches predate our collection.
+        /// </summary>
+        /// <param name="player">Optional substring match on either player name.</param>
+        /// <param name="from">Earliest match date (<c>YYYY-MM-DD</c>).</param>
+        /// <param name="to">Latest match date (<c>YYYY-MM-DD</c>).</param>
+        /// <param name="surface">Optional surface filter.</param>
+        /// <param name="gender">Optional gender filter.</param>
+        /// <param name="limit">Page size, 1–200. Defaults to 50.</param>
+        /// <param name="offset">Page offset. Defaults to 0.</param>
+        /// <param name="cancellationToken">A token to cancel the request.</param>
+        /// <returns>A page of charted matches — the authoritative coverage list.</returns>
+        public Task<Page<RallyMatch>> ListRallyMatchesAsync(
+            string? player = null,
+            string? from = null,
+            string? to = null,
+            string? surface = null,
+            Gender? gender = null,
+            int limit = 50,
+            int offset = 0,
+            CancellationToken cancellationToken = default) =>
+            GetPageAsync<RallyMatch>(
+                "/rally/matches",
+                new[]
+                {
+                    Param("player", player),
+                    Param("from", from),
+                    Param("to", to),
+                    Param("surface", surface),
+                    Param("gender", gender?.ToRallyQueryValue()),
+                    Param("limit", limit),
+                    Param("offset", offset),
+                },
+                cancellationToken);
+
+        /// <summary>
+        /// Rally construction for one charted match — its points in play order.
+        /// <b>ULTRA.</b>
+        /// </summary>
+        /// <param name="rallyMatchId">The rally match id (this product's own id space).</param>
+        /// <param name="limit">Points per page, 1–200. Defaults to 50.</param>
+        /// <param name="offset">Point offset. Defaults to 0.</param>
+        /// <param name="cancellationToken">A token to cancel the request.</param>
+        /// <returns>The charted match with its points; <c>Meta.Total</c> is the full point count.</returns>
+        public Task<RallyMatchDetail?> GetRallyMatchAsync(
+            int rallyMatchId,
+            int limit = 50,
+            int offset = 0,
+            CancellationToken cancellationToken = default) =>
+            GetAsync<RallyMatchDetail>(
+                "/rally/matches/" + rallyMatchId,
                 new[] { Param("limit", limit), Param("offset", offset) },
+                cancellationToken);
+
+        /// <summary>
+        /// Rally construction addressed by <b>our</b> match id, resolved through
+        /// the optional link. <b>ULTRA.</b>
+        /// </summary>
+        /// <param name="matchId">Our match id (the same id space as <c>/matches</c>).</param>
+        /// <param name="limit">Points per page, 1–200. Defaults to 50.</param>
+        /// <param name="offset">Point offset. Defaults to 0.</param>
+        /// <param name="cancellationToken">A token to cancel the request.</param>
+        /// <returns>The charted match with its points.</returns>
+        /// <remarks>
+        /// Answers <c>404</c> with code <c>not_charted</c> when we hold the match
+        /// but nobody charted it — deliberately distinct from "no such match"
+        /// (<c>not_found</c>), because most matches are not charted. Check
+        /// <see cref="LiveTennisApiException.Code"/> on the
+        /// <see cref="NotFoundException"/> to tell them apart.
+        /// </remarks>
+        public Task<RallyMatchDetail?> GetMatchRallyAsync(
+            int matchId,
+            int limit = 50,
+            int offset = 0,
+            CancellationToken cancellationToken = default) =>
+            GetAsync<RallyMatchDetail>(
+                "/history/matches/" + matchId + "/rally",
+                new[] { Param("limit", limit), Param("offset", offset) },
+                cancellationToken);
+
+        /// <summary>
+        /// Career shot-level charting aggregate for one player, from the Match
+        /// Charting Project. <b>ULTRA.</b> Coverage is curated (11,646 charted
+        /// matches, concentrated on the majors), not full-slate.
+        /// </summary>
+        /// <param name="name">Player name (min 3 chars — must resolve to one charted person).</param>
+        /// <param name="gender">Optional disambiguator when the fragment matches players of both tours.</param>
+        /// <param name="cancellationToken">A token to cancel the request.</param>
+        /// <returns>The aggregate, or <c>null</c> if the body was empty.</returns>
+        public Task<ChartingPlayerAggregate?> GetChartingPlayerAsync(
+            string name,
+            Gender? gender = null,
+            CancellationToken cancellationToken = default) =>
+            GetAsync<ChartingPlayerAggregate>(
+                "/charting/players",
+                new[]
+                {
+                    Param("name", name),
+                    Param("gender", gender?.ToChartingQueryValue()),
+                },
+                cancellationToken);
+
+        /// <summary>
+        /// One charted match — every Match Charting Project stat family for both
+        /// players, with the per-set split exactly as charted. <b>ULTRA.</b>
+        /// </summary>
+        /// <param name="chartingMatchId">The charting match id (own id space, 1960–2026).</param>
+        /// <param name="cancellationToken">A token to cancel the request.</param>
+        /// <returns>The charted match, or <c>null</c> if the body was empty.</returns>
+        public Task<ChartingMatch?> GetChartingMatchAsync(int chartingMatchId, CancellationToken cancellationToken = default) =>
+            GetAsync<ChartingMatch>("/charting/matches/" + chartingMatchId, null, cancellationToken);
+
+        /// <summary>
+        /// Mints a short-lived connection token for the high-fan-out push
+        /// WebSocket feed. <b>ULTRA.</b> Mint a fresh token on reconnect.
+        /// </summary>
+        /// <param name="cancellationToken">A token to cancel the request.</param>
+        /// <returns>
+        /// The token with the push URL and channel vocabulary
+        /// (<c>match:{match_id}</c> per-match streams, <c>slate:all</c> for
+        /// every live score frame), or <c>null</c> if the body was empty.
+        /// </returns>
+        public Task<WsToken?> GetWsTokenAsync(CancellationToken cancellationToken = default) =>
+            GetAsync<WsToken>("/ws-token", null, cancellationToken);
+
+        /// <summary>
+        /// Lists pre-built monthly bulk packages, newest period first.
+        /// <b>PRO, or a package subscription</b>
+        /// (<see cref="HistoryPackageKind.Rankings"/> and year listings need
+        /// ULTRA / History Business / a 1-year package).
+        /// </summary>
+        /// <param name="kind">Package family. Defaults to <see cref="HistoryPackageKind.Tape"/>.</param>
+        /// <param name="year">Optional year (<c>YYYY</c>) — lists every published month of that year.</param>
+        /// <param name="cancellationToken">A token to cancel the request.</param>
+        /// <returns>The ready packages. Treat this listing as the authoritative set of months that exist.</returns>
+        public Task<Page<HistoryPackage>> ListHistoryPackagesAsync(
+            HistoryPackageKind kind = HistoryPackageKind.Tape,
+            string? year = null,
+            CancellationToken cancellationToken = default) =>
+            GetPageAsync<HistoryPackage>(
+                "/history/packages",
+                new[]
+                {
+                    Param("kind", kind == HistoryPackageKind.Tape ? null : kind.ToQueryValue()),
+                    Param("year", year),
+                },
+                cancellationToken);
+
+        /// <summary>
+        /// One monthly package's manifest (file list, sizes, SHA-256 digests).
+        /// <b>PRO, or a package subscription.</b> Download the files themselves
+        /// with <c>?format=jsonl|csv</c> outside this client.
+        /// </summary>
+        /// <param name="period">The month, <c>YYYY-MM</c>.</param>
+        /// <param name="kind">Package family; <see cref="HistoryPackageKind.Rankings"/> requires ULTRA.</param>
+        /// <param name="cancellationToken">A token to cancel the request.</param>
+        /// <returns>The manifest, or <c>null</c> if the body was empty.</returns>
+        public Task<HistoryPackage?> GetHistoryPackageAsync(
+            string period,
+            HistoryPackageKind kind = HistoryPackageKind.Tape,
+            CancellationToken cancellationToken = default) =>
+            GetAsync<HistoryPackage>(
+                "/history/packages/" + Uri.EscapeDataString(period ?? throw new ArgumentNullException(nameof(period))),
+                new[] { Param("kind", kind == HistoryPackageKind.Tape ? null : kind.ToQueryValue()) },
                 cancellationToken);
 
         /// <summary>Upcoming scheduled fixtures, earliest first.</summary>
@@ -285,6 +765,27 @@ namespace LiveTennisApi
         private static KeyValuePair<string, string?> Param(string key, int value) =>
             new KeyValuePair<string, string?>(key, value.ToString(CultureInfo.InvariantCulture));
 
+        /// <summary>Appends repeatable <c>player=</c> parameters, enforcing the API's cap of 50 ids.</summary>
+        private static void AddPlayerParams(List<KeyValuePair<string, string?>> query, IEnumerable<int>? players)
+        {
+            if (players is null)
+            {
+                return;
+            }
+
+            var count = 0;
+            foreach (var id in players)
+            {
+                count++;
+                if (count > MaxPlayerFilters)
+                {
+                    throw new ArgumentException("At most " + MaxPlayerFilters + " player ids are accepted.", nameof(players));
+                }
+
+                query.Add(Param("player", id));
+            }
+        }
+
         private async Task<Page<T>> GetPageAsync<T>(
             string path,
             IEnumerable<KeyValuePair<string, string?>> query,
@@ -297,7 +798,8 @@ namespace LiveTennisApi
         private async Task<T?> GetAsync<T>(
             string path,
             IEnumerable<KeyValuePair<string, string?>>? query,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            string? requiredTier = null)
             where T : class
         {
             ThrowIfDisposed();
@@ -342,16 +844,24 @@ namespace LiveTennisApi
                 using (response)
                 {
                     var status = (int)response.StatusCode;
+                    var retryAfter = RetryAfterSeconds(response);
 
-                    if (ShouldRetry(status) && attempt < _maxRetries)
+                    // Retrying can only fix the per-minute window. A long
+                    // Retry-After marks a daily-quota or abuse block: burning
+                    // retries against it is exactly the behaviour that earns an
+                    // abuse block, so surface it immediately instead.
+                    var retriableNow = ShouldRetry(status) &&
+                        !(status == 429 && retryAfter.HasValue && retryAfter.Value > 60);
+
+                    if (retriableNow && attempt < _maxRetries)
                     {
-                        await DelayAsync(Backoff(attempt, RetryAfterSeconds(response)), cancellationToken).ConfigureAwait(false);
+                        await DelayAsync(Backoff(attempt, retryAfter), cancellationToken).ConfigureAwait(false);
                         continue;
                     }
 
                     if (!response.IsSuccessStatusCode)
                     {
-                        throw await BuildExceptionAsync(response, path, url).ConfigureAwait(false);
+                        throw await BuildExceptionAsync(response, path, url, requiredTier).ConfigureAwait(false);
                     }
 
                     return await DeserializeAsync<T>(response, cancellationToken).ConfigureAwait(false);
@@ -426,7 +936,11 @@ namespace LiveTennisApi
             }
         }
 
-        private async Task<LiveTennisApiException> BuildExceptionAsync(HttpResponseMessage response, string path, string url)
+        private async Task<LiveTennisApiException> BuildExceptionAsync(
+            HttpResponseMessage response,
+            string path,
+            string url,
+            string? requiredTierOverride)
         {
             string? body = null;
             try
@@ -439,40 +953,82 @@ namespace LiveTennisApi
                 // mask the status error.
             }
 
-            var code = ExtractErrorCode(body);
+            var error = ExtractErrorBody(body);
             var headers = CollectHeaders(response);
             var reason = string.IsNullOrEmpty(response.ReasonPhrase) ? "request failed" : response.ReasonPhrase!;
-            var message = code ?? reason;
-            var requiredTier = RequiredTierFor(path);
+            var message = error.Code ?? reason;
+            var requiredTier = requiredTierOverride ?? RequiredTierFor(path);
             var retryAfter = RetryAfterSeconds(response);
 
-            return ExceptionFactory.ForStatus(response.StatusCode, message, code, url, body, headers, requiredTier, retryAfter);
+            return ExceptionFactory.ForStatus(
+                response.StatusCode, message, error.Code, url, body, headers, requiredTier, retryAfter,
+                error.ResetsAt, error.RetryAtEpoch);
         }
 
-        private static string? ExtractErrorCode(string? body)
+        /// <summary>The machine-readable pieces of an error body.</summary>
+        private readonly struct ErrorBody
+        {
+            public ErrorBody(string? code, string? resetsAt, long? retryAtEpoch)
+            {
+                Code = code;
+                ResetsAt = resetsAt;
+                RetryAtEpoch = retryAtEpoch;
+            }
+
+            public string? Code { get; }
+
+            public string? ResetsAt { get; }
+
+            public long? RetryAtEpoch { get; }
+        }
+
+        private static ErrorBody ExtractErrorBody(string? body)
         {
             if (string.IsNullOrEmpty(body))
             {
-                return null;
+                return default;
             }
 
             try
             {
                 using var doc = JsonDocument.Parse(body!);
-                if (doc.RootElement.ValueKind == JsonValueKind.Object &&
-                    doc.RootElement.TryGetProperty("error", out var error) &&
+                if (doc.RootElement.ValueKind != JsonValueKind.Object)
+                {
+                    return default;
+                }
+
+                string? code = null;
+                if (doc.RootElement.TryGetProperty("error", out var error) &&
                     error.ValueKind == JsonValueKind.String)
                 {
                     var value = error.GetString();
-                    return string.IsNullOrEmpty(value) ? null : value;
+                    code = string.IsNullOrEmpty(value) ? null : value;
                 }
+
+                // Daily-window 429s carry an absolute reset instant.
+                string? resetsAt = null;
+                if (doc.RootElement.TryGetProperty("resets_at", out var resets) &&
+                    resets.ValueKind == JsonValueKind.String)
+                {
+                    resetsAt = resets.GetString();
+                }
+
+                // Abuse-throttle 429s carry the block's end as Unix seconds.
+                long? retryAtEpoch = null;
+                if (doc.RootElement.TryGetProperty("retry_at_epoch", out var retryAt) &&
+                    retryAt.ValueKind == JsonValueKind.Number &&
+                    retryAt.TryGetInt64(out var epoch))
+                {
+                    retryAtEpoch = epoch;
+                }
+
+                return new ErrorBody(code, resetsAt, retryAtEpoch);
             }
             catch (JsonException)
             {
-                // Non-JSON body — no structured code to extract.
+                // Non-JSON body — no structured fields to extract.
+                return default;
             }
-
-            return null;
         }
 
         private static IReadOnlyDictionary<string, string> CollectHeaders(HttpResponseMessage response)
