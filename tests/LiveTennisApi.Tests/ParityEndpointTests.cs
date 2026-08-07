@@ -123,7 +123,7 @@ namespace LiveTennisApi.Tests
 
             Assert.Equal(71, webhook!.Id);
             // The secret exists ONLY on this response — the list never carries it.
-            Assert.Equal("whsec_a1b2c3d4e5f60718293a4b5c6d7e8f90", webhook.Secret);
+            Assert.Equal("whsec_test_fixture_not_a_real_secret", webhook.Secret);
             Assert.False(string.IsNullOrEmpty(webhook.SecretNote));
         }
 
