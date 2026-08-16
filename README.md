@@ -110,8 +110,9 @@ var client = new LiveTennisApiClient("twjp_your_key", new LiveTennisApiClientOpt
 
 ¹ `status=completed` needs BASIC+ (or any History plan).
 ² Or any History plan — History grants work on a FREE core key.
-³ `kind=rankings` and `year=` listings need ULTRA / History Business / a 1-year
-package.
+³ `kind=rankings`, `kind=rally` and `year=` listings need ULTRA / History
+Business / a 1-year package; `kind=archive` shares the tape entitlement. The
+yearly kinds (`rally`, `archive`) use bare-year `YYYY` periods.
 ⁴ Direct keys only — a marketplace (RapidAPI) key gets `403 direct_key_required`.
 
 This covers **every path of the public v1 OpenAPI spec**. Deliberate

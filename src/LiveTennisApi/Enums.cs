@@ -126,6 +126,19 @@ namespace LiveTennisApi
 
         /// <summary>As-of ranking records. <b>ULTRA.</b></summary>
         Rankings,
+
+        /// <summary>
+        /// The charted rally corpus (shot-by-shot) as yearly exports — the
+        /// <c>period</c> is the bare year <c>YYYY</c>. <b>ULTRA.</b>
+        /// </summary>
+        Rally,
+
+        /// <summary>
+        /// The results archive (1968–2022) as yearly exports — the
+        /// <c>period</c> is the bare year <c>YYYY</c>. Same entitlement as the
+        /// tape packages.
+        /// </summary>
+        Archive,
     }
 
     /// <summary>An event family a webhook can subscribe to.</summary>
@@ -233,6 +246,8 @@ namespace LiveTennisApi
             {
                 case HistoryPackageKind.Tape: return "tape";
                 case HistoryPackageKind.Rankings: return "rankings";
+                case HistoryPackageKind.Rally: return "rally";
+                case HistoryPackageKind.Archive: return "archive";
                 default: throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unknown package kind.");
             }
         }

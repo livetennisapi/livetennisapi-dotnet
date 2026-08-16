@@ -699,10 +699,18 @@ namespace LiveTennisApi
         /// <summary>
         /// Lists pre-built monthly bulk packages, newest period first.
         /// <b>PRO, or a package subscription</b>
-        /// (<see cref="HistoryPackageKind.Rankings"/> and year listings need
-        /// ULTRA / History Business / a 1-year package).
+        /// (<see cref="HistoryPackageKind.Rankings"/>,
+        /// <see cref="HistoryPackageKind.Rally"/> and year listings need
+        /// ULTRA / History Business / a 1-year package;
+        /// <see cref="HistoryPackageKind.Archive"/> shares the tape
+        /// entitlement).
         /// </summary>
-        /// <param name="kind">Package family. Defaults to <see cref="HistoryPackageKind.Tape"/>.</param>
+        /// <param name="kind">
+        /// Package family. Defaults to <see cref="HistoryPackageKind.Tape"/>.
+        /// The yearly kinds (<see cref="HistoryPackageKind.Rally"/>,
+        /// <see cref="HistoryPackageKind.Archive"/>) list one package per year
+        /// (<c>YYYY</c> periods) rather than per month.
+        /// </param>
         /// <param name="year">Optional year (<c>YYYY</c>) — lists every published month of that year.</param>
         /// <param name="cancellationToken">A token to cancel the request.</param>
         /// <returns>The ready packages. Treat this listing as the authoritative set of months that exist.</returns>
@@ -724,8 +732,18 @@ namespace LiveTennisApi
         /// <b>PRO, or a package subscription.</b> Download the files themselves
         /// with <c>?format=jsonl|csv</c> outside this client.
         /// </summary>
-        /// <param name="period">The month, <c>YYYY-MM</c>.</param>
-        /// <param name="kind">Package family; <see cref="HistoryPackageKind.Rankings"/> requires ULTRA.</param>
+        /// <param name="period">
+        /// The month, <c>YYYY-MM</c> — except for the yearly kinds
+        /// (<see cref="HistoryPackageKind.Rally"/>,
+        /// <see cref="HistoryPackageKind.Archive"/>), where it is the bare
+        /// year <c>YYYY</c>.
+        /// </param>
+        /// <param name="kind">
+        /// Package family; <see cref="HistoryPackageKind.Rankings"/> and
+        /// <see cref="HistoryPackageKind.Rally"/> require ULTRA.
+        /// <see cref="HistoryPackageKind.Archive"/> shares the tape
+        /// entitlement.
+        /// </param>
         /// <param name="cancellationToken">A token to cancel the request.</param>
         /// <returns>The manifest, or <c>null</c> if the body was empty.</returns>
         public Task<HistoryPackage?> GetHistoryPackageAsync(

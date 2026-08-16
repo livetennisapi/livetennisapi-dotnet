@@ -400,6 +400,34 @@ namespace LiveTennisApi.Tests
             Assert.False(string.IsNullOrEmpty(page.Data[0].Files![0].Sha256));
         }
 
+        [Theory]
+        [InlineData(HistoryPackageKind.Rankings, "rankings")]
+        [InlineData(HistoryPackageKind.Rally, "rally")]
+        [InlineData(HistoryPackageKind.Archive, "archive")]
+        public async Task HistoryPackages_NonTapeKinds_ReachTheWire(HistoryPackageKind kind, string wire)
+        {
+            var handler = new StubHttpMessageHandler(_ => TestSupport.Ok("{\"data\":[]}"));
+            using var client = TestSupport.ClientOver(handler);
+
+            await client.ListHistoryPackagesAsync(kind);
+
+            Assert.Contains("kind=" + wire, handler.Requests[0].Query);
+        }
+
+        [Theory]
+        [InlineData(HistoryPackageKind.Rally, "2024", "rally")]
+        [InlineData(HistoryPackageKind.Archive, "1999", "archive")]
+        public async Task HistoryPackage_YearlyKinds_TakeBareYearPeriods(HistoryPackageKind kind, string period, string wire)
+        {
+            var handler = new StubHttpMessageHandler(_ => TestSupport.Ok("{}"));
+            using var client = TestSupport.ClientOver(handler);
+
+            await client.GetHistoryPackageAsync(period, kind);
+
+            Assert.EndsWith("/history/packages/" + period, handler.Requests[0].Uri.AbsolutePath);
+            Assert.Contains("kind=" + wire, handler.Requests[0].Query);
+        }
+
         [Fact]
         public async Task HistoryPackages_DefaultTapeKind_IsOmitted()
         {
