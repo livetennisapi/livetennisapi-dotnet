@@ -1,0 +1,79 @@
+name: publish
+
+# Publishes LiveTennisApi to NuGet.org when a GitHub Release is published.
+#
+# Uses NuGet.org Trusted Publishing (OIDC) — there is NO NuGet API key stored in
+# this repository or its secrets. NuGet verifies this workflow's identity
+# directly and hands back a short-lived key, so there is no long-lived secret to
+# leak or rotate. This matches how livetennisapi-python (PyPI) and
+# livetennisapi-js (npm) already publish.
+#
+# One-time setup on nuget.org (https://www.nuget.org/account/trustedpublishing):
+#   Add a trusted publishing policy:
+#     Package owner:    (the nuget.org account/username that owns LiveTennisApi)
+#     Repository owner: livetennisapi
+#     Repository:       livetennisapi-dotnet
+#     Workflow file:    publish.yml
+#     Environment:      nuget
+#   Because LiveTennisApi already exists on nuget.org (1.0.0), the policy binds
+#   to the existing package — no "pending" package registration is needed.
+#
+# Fallback if trusted publishing is unavailable: add a NUGET_API_KEY secret and
+# replace the `NuGet/login` step + `--api-key` reference below with that secret.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: publish to NuGet
+    runs-on: ubuntu-latest
+    environment:
+      name: nuget
+      url: https://www.nuget.org/packages/LiveTennisApi
+    permissions:
+      contents: read
+      id-token: write   # required for trusted publishing (OIDC)
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Truth pin
+        run: sh scripts/truthcheck.sh
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - run: dotnet test LiveTennisApi.sln -c Release
+
+      - name: Assert the tag matches the package version
+        if: github.event_name == 'release'
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PKG="$(grep -oPm1 '(?<=<Version>)[^<]+' src/LiveTennisApi/LiveTennisApi.csproj)"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "::error::release tag ($TAG) does not match csproj <Version> ($PKG)"
+            exit 1
+          fi
+          echo "tag and version agree: $PKG"
+
+      - name: Pack
+        run: dotnet pack src/LiveTennisApi/LiveTennisApi.csproj -c Release -o dist
+
+      - name: Authenticate to NuGet via OIDC
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ vars.NUGET_USER }}
+
+      - name: Push package + symbols
+        run: |
+          dotnet nuget push "dist/*.nupkg" \
+            --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
