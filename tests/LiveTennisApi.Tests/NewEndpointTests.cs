@@ -25,6 +25,7 @@ namespace LiveTennisApi.Tests
             Assert.Equal("cincinnati-atp", retired.TournamentId);
             Assert.Equal("R16", retired.RoundCode);
             Assert.Equal("Retired", retired.EventStatus);
+            Assert.Equal("2026-08-19T09:15:00Z", retired.EventStatusUpdatedAt); // when we recorded it (added 2026-08-19)
             Assert.Equal(1, retired.Winner);
             Assert.Equal(2, retired.Withdrew);                 // the withdrawer is the loser
             Assert.Equal("from_start", retired.Tape!.Coverage);
@@ -34,6 +35,7 @@ namespace LiveTennisApi.Tests
             Assert.Null(exhibition.Tour);                      // exhibitions carry no tour — a real state
             Assert.Null(exhibition.TournamentId);
             Assert.Equal("Q", exhibition.RoundCode);           // unnumbered qualifying round
+            Assert.Null(exhibition.EventStatusUpdatedAt);      // never backfilled — absent stays null
             Assert.Null(exhibition.Withdrew);
             Assert.Equal("reconstructed", exhibition.Tape!.Coverage);
 

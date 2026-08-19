@@ -86,6 +86,17 @@ namespace LiveTennisApi.Models
         [JsonPropertyName("event_status")]
         public string? EventStatus { get; init; }
 
+        /// <summary>
+        /// The instant the current <see cref="EventStatus"/> was recorded, as an
+        /// ISO 8601 UTC string (added 2026-08-19). Bumps only when the value
+        /// changes — a re-read of the same status never moves it — and a clear
+        /// back to <c>null</c> bumps it too. <c>null</c> while the status has
+        /// never changed since the field was introduced: never backfilled,
+        /// never guessed.
+        /// </summary>
+        [JsonPropertyName("event_status_updated_at")]
+        public string? EventStatusUpdatedAt { get; init; }
+
         /// <summary>Whether this is a doubles match.</summary>
         [JsonPropertyName("is_doubles")]
         public bool? IsDoubles { get; init; }
