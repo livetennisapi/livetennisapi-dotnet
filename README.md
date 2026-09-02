@@ -169,6 +169,11 @@ var score = (await client.GetMatchScoreAsync(matchId));
 - On completed matches that ended early, `Match.EventStatus` says how
   (`Retired`, `Walk Over`, …) and `Match.Withdrew` says which player
   retired/conceded (`1`/`2`).
+- `Match.HasAnalysis` / `Match.HasMarket` (every tier, since 2026-09-02) say
+  whether a model thesis/profile, or a match-winner market, exists for the
+  match. Filter a slate on them before calling `/matches/{id}/analysis` or
+  `/markets/{id}/prices`, which answer `404` (`no_analysis` / `no_market`)
+  about the same fact. `null` only when talking to an older server.
 
 ### The tape (point-by-point history)
 

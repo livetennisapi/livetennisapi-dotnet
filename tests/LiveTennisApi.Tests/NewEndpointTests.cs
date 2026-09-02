@@ -28,6 +28,8 @@ namespace LiveTennisApi.Tests
             Assert.Equal("2026-08-19T09:15:00Z", retired.EventStatusUpdatedAt); // when we recorded it (added 2026-08-19)
             Assert.Equal(1, retired.Winner);
             Assert.Equal(2, retired.Withdrew);                 // the withdrawer is the loser
+            Assert.True(retired.HasAnalysis);                  // a thesis/profile exists (added 2026-09-02)
+            Assert.True(retired.HasMarket);                    // a match-winner market is mapped
             Assert.Equal("from_start", retired.Tape!.Coverage);
             Assert.Equal(141, retired.Tape.Rows);
 
@@ -37,11 +39,27 @@ namespace LiveTennisApi.Tests
             Assert.Equal("Q", exhibition.RoundCode);           // unnumbered qualifying round
             Assert.Null(exhibition.EventStatusUpdatedAt);      // never backfilled — absent stays null
             Assert.Null(exhibition.Withdrew);
+            Assert.False(exhibition.HasAnalysis);              // present-false: nothing held — skip /analysis
+            Assert.False(exhibition.HasMarket);                // present-false: no market — skip /prices
             Assert.Equal("reconstructed", exhibition.Tape!.Coverage);
 
             // Meta gained total/has_more; total stays null where uncountable.
             Assert.Null(page.Meta!.Total);
             Assert.False(page.Meta.HasMore);
+        }
+
+        // has_analysis / has_market (every tier since 2026-09-02) carry the same
+        // fact the per-match analysis and prices endpoints 404 about. An older
+        // server omits them, and absence must stay null — never become false.
+        [Fact]
+        public async Task Matches_HasAnalysisHasMarket_AbsentStaysNull()
+        {
+            var handler = new StubHttpMessageHandler(_ => TestSupport.Ok("{\"data\":[{\"id\":1}]}"));
+            using var client = TestSupport.ClientOver(handler);
+
+            var match = (await client.ListCompletedMatchesAsync()).Data[0];
+            Assert.Null(match.HasAnalysis);
+            Assert.Null(match.HasMarket);
         }
 
         // --- New list filters --------------------------------------------------

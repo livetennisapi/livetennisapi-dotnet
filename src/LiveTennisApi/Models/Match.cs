@@ -133,6 +133,24 @@ namespace LiveTennisApi.Models
         [JsonPropertyName("tape")]
         public TapeInfo? Tape { get; init; }
 
+        /// <summary>
+        /// Whether a model thesis or profile exists for this match — on every
+        /// <c>/matches</c> row and the detail, every tier (since 2026-09-02).
+        /// Filter the slate on this before calling <c>/matches/{id}/analysis</c>,
+        /// which answers <c>404 no_analysis</c> about the same fact. <c>null</c>
+        /// only when talking to an older server that does not send it.
+        /// </summary>
+        [JsonPropertyName("has_analysis")]
+        public bool? HasAnalysis { get; init; }
+
+        /// <summary>
+        /// Whether a match-winner market is mapped to this match (every tier,
+        /// since 2026-09-02). Same role for <c>/markets/{id}/prices</c>
+        /// (<c>404 no_market</c>). <c>null</c> only against an older server.
+        /// </summary>
+        [JsonPropertyName("has_market")]
+        public bool? HasMarket { get; init; }
+
         /// <summary>Embedded market. <b>PRO+ only</b>; <c>null</c> below that tier.</summary>
         [JsonPropertyName("market")]
         public Market? Market { get; init; }
