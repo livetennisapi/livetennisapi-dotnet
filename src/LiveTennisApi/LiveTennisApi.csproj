@@ -15,8 +15,8 @@
   <PropertyGroup>
     <PackageId>LiveTennisApi</PackageId>
     <Version>1.3.0</Version>
-    <Authors>Live Tennis API</Authors>
-    <Company>Live Tennis API</Company>
+    <Authors>Synapse Research Ltd</Authors>
+    <Company>Synapse Research Ltd</Company>
     <Product>Live Tennis API .NET Client</Product>
     <Description>Official .NET client for the Live Tennis API — real-time tennis scores, players, fixtures and match-winner market prices for ATP, WTA, Challenger, ITF and juniors. Async, HttpClient- and IHttpClientFactory-friendly, with typed models and a typed exception hierarchy. Targets netstandard2.0 and net8.0.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
