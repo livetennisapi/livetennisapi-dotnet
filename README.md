@@ -93,6 +93,7 @@ var client = new LiveTennisApiClient("twjp_your_key", new LiveTennisApiClientOpt
 | `GetMarketPricesAsync(matchId, limit)` | `/markets/{id}/prices` | PRO |
 | `ListMatchPricesAsync(matchId, limit, minutes)` | `/matches/{id}/prices` | PRO |
 | `ListRankingsAsync(system, asOf, …)` | `/rankings` (listing mode) | PRO |
+| `GetPlayerStatsAsync(playerId, from, to, surface, level, last)` | `/players/{id}/stats` | PRO (`ServeReturn` ULTRA) |
 | `ListHistoryPackagesAsync(kind, year)` | `/history/packages` | PRO³ |
 | `GetHistoryPackageAsync(period, kind)` | `/history/packages/{period}` | PRO³ |
 | `GetMatchAnalysisAsync(matchId)` | `/matches/{id}/analysis` | ULTRA |

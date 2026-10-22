@@ -45,6 +45,22 @@ namespace LiveTennisApi.Models
         public JsonElement? Season { get; init; }
     }
 
+    /// <summary>A player's current doubles ranking.</summary>
+    public sealed record DoublesRanking : LiveTennisModel
+    {
+        /// <summary>Position on the doubles table.</summary>
+        [JsonPropertyName("rank")]
+        public int? Rank { get; init; }
+
+        /// <summary>Doubles ranking points, or <c>null</c>.</summary>
+        [JsonPropertyName("points")]
+        public int? Points { get; init; }
+
+        /// <summary>UTC date (<c>YYYY-MM-DD</c>) the weekly refresh last found the player on the table.</summary>
+        [JsonPropertyName("observed_on")]
+        public string? ObservedOn { get; init; }
+    }
+
     /// <summary>A player, or — when <see cref="IsDoublesTeam"/> is <c>true</c> — a doubles pairing.</summary>
     public sealed record Player : LiveTennisModel
     {
@@ -94,6 +110,21 @@ namespace LiveTennisApi.Models
         /// <summary>Birth date as an ISO 8601 date string (<c>YYYY-MM-DD</c>), or <c>null</c>.</summary>
         [JsonPropertyName("birthday")]
         public string? Birthday { get; init; }
+
+        /// <summary>
+        /// Height in centimetres from the results archive's record of the same person.
+        /// Single-player read only; paid tiers, <c>null</c> on a FREE key. Never inferred.
+        /// </summary>
+        [JsonPropertyName("height_cm")]
+        public int? HeightCm { get; init; }
+
+        /// <summary>
+        /// Current position on the official ATP/WTA doubles table. Single-player read
+        /// only; paid tiers, <c>null</c> on a FREE key, off the table, or last seen more
+        /// than 21 days ago. Never copied into <see cref="Ranking"/>.
+        /// </summary>
+        [JsonPropertyName("doubles_ranking")]
+        public DoublesRanking? DoublesRanking { get; init; }
 
         /// <summary>Whether this record is a doubles team rather than an individual.</summary>
         [JsonPropertyName("is_doubles_team")]

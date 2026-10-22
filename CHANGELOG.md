@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **`GetPlayerStatsAsync(playerId, from, to, surface, level, last)`** for
+  `GET /players/{id}/stats` (API 1.13.61, 2026-10-22). It returns one player's
+  record over our completed singles matches as `PlayerStatsResult`. PRO gets
+  `Records`: W/L splits, the set-based record, withdrawals and recent matches.
+  ULTRA adds `ServeReturn`, which stays `null` below ULTRA.
+- **`Player.HeightCm`** (`height_cm`) and **`Player.DoublesRanking`**
+  (`doubles_ranking`: rank, points, observed_on). Single-player read only,
+  paid tiers; `null` on a FREE key.
+
 ## [1.3.0] - 2026-09-02
 
 ### Added

@@ -57,6 +57,7 @@ namespace LiveTennisApi
                 ("/charting", "ULTRA"),
                 ("/ws-token", "ULTRA"),
                 ("/webhooks", "ULTRA"),
+                ("/stats", "PRO"),
                 ("/events", "PRO"),
                 ("/markets", "PRO"),
                 ("/prices", "PRO"),
@@ -253,6 +254,40 @@ namespace LiveTennisApi
         /// <returns>The player, or <c>null</c> if the body was empty.</returns>
         public Task<Player?> GetPlayerAsync(int playerId, CancellationToken cancellationToken = default) =>
             GetAsync<Player>("/players/" + playerId, null, cancellationToken);
+
+        /// <summary>
+        /// One player's record over our completed singles matches (2023 onward): W/L
+        /// overall and by surface, venue, level and season, the set-based record,
+        /// withdrawals and the last N matches. <b>PRO.</b> ULTRA adds
+        /// <see cref="PlayerStatsResult.ServeReturn"/>; below ULTRA it is <c>null</c>.
+        /// </summary>
+        /// <param name="playerId">The player id. A doubles-team id is refused with 400 <c>doubles_not_supported</c>.</param>
+        /// <param name="from">Window start: <c>YYYY-MM-DD</c> or ISO 8601 UTC. Defaults to <paramref name="to"/> minus 365 days.</param>
+        /// <param name="to">Window end (a bare date includes the whole day). Defaults to now.</param>
+        /// <param name="surface"><c>hard</c>, <c>clay</c>, <c>grass</c> or <c>indoor</c>.</param>
+        /// <param name="level"><c>atp</c>, <c>wta</c>, <c>challenger</c>, <c>itf</c> or <c>juniors</c>.</param>
+        /// <param name="last">How many recent matches to list, 1–50. Server default 20.</param>
+        /// <param name="cancellationToken">A token to cancel the request.</param>
+        /// <returns>The player's record, or <c>null</c> if the body was empty.</returns>
+        public Task<PlayerStatsResult?> GetPlayerStatsAsync(
+            int playerId,
+            string? from = null,
+            string? to = null,
+            string? surface = null,
+            string? level = null,
+            int? last = null,
+            CancellationToken cancellationToken = default) =>
+            GetAsync<PlayerStatsResult>(
+                "/players/" + playerId + "/stats",
+                new[]
+                {
+                    Param("from", from),
+                    Param("to", to),
+                    Param("surface", surface),
+                    Param("level", level),
+                    Param("last", last?.ToString(CultureInfo.InvariantCulture)),
+                },
+                cancellationToken);
 
         /// <summary>Match-winner market(s) for a match. <b>PRO.</b></summary>
         /// <param name="matchId">The match id.</param>
