@@ -364,7 +364,7 @@ namespace LiveTennisApi.Models
         [JsonPropertyName("level")]
         public string? Level { get; init; }
 
-        /// <summary>The opponent.</summary>
+        /// <summary>The opponent, or <c>null</c> when the match row holds no opponent id.</summary>
         [JsonPropertyName("opponent")]
         public PlayerRef? Opponent { get; init; }
 
