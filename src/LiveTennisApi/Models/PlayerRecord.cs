@@ -406,7 +406,13 @@ namespace LiveTennisApi.Models
         [JsonPropertyName("matches")]
         public int? Matches { get; init; }
 
-        /// <summary>Matches that carried any statistic.</summary>
+        /// <summary>
+        /// Matches whose measured statistics reach the final (the
+        /// <c>freshness.measured.complete</c> judgement of
+        /// <c>GET /matches/{matchId}/statistics</c>). Only these are summed. A
+        /// match that carries statistics which stop short of the final counts
+        /// under <see cref="MatchesIncomplete"/> instead.
+        /// </summary>
         [JsonPropertyName("matches_with_stats")]
         public int? MatchesWithStats { get; init; }
 

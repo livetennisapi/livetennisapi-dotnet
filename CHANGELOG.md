@@ -23,6 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`doubles_ranking`: rank, points, observed_on). Single-player read only,
   paid tiers; `null` on a FREE key.
 
+### Fixed
+
+- The doc comment on `PlayerServeReturn.MatchesWithStats` said "matches that
+  carried any statistic". It counts the matches whose measured statistics
+  reach the final, the only ones that are summed. A match whose statistics
+  stop short of the final counts under `MatchesIncomplete` instead.
+
 ## [1.3.0] - 2026-09-02
 
 ### Added
