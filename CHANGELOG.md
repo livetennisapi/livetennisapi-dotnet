@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   record over our completed singles matches as `PlayerStatsResult`. PRO gets
   `Records`: W/L splits, the set-based record, withdrawals and recent matches.
   ULTRA adds `ServeReturn`, which stays `null` below ULTRA.
+  `ServeReturn.MatchesIncomplete` (`matches_incomplete`) counts the matches
+  whose statistics stop short of the final and are left out of every sum.
+  `PlayerRecentScore.Games` is `IReadOnlyList<IReadOnlyList<int?>>`: the API
+  passes the stored per-set lists through as held, so an inner `null` means
+  that game count is unknown and is kept in place rather than read as 0.
 - **`Player.HeightCm`** (`height_cm`) and **`Player.DoublesRanking`**
   (`doubles_ranking`: rank, points, observed_on). Single-player read only,
   paid tiers; `null` on a FREE key.

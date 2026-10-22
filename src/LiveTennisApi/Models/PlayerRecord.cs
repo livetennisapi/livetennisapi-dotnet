@@ -388,9 +388,12 @@ namespace LiveTennisApi.Models
         [JsonPropertyName("sets")]
         public IReadOnlyList<int?>? Sets { get; init; }
 
-        /// <summary>Games per set, player-major.</summary>
+        /// <summary>
+        /// Games per set, player-major, passed through exactly as held. An inner
+        /// <c>null</c> means that game count is unknown, not 0; every position is kept.
+        /// </summary>
         [JsonPropertyName("games")]
-        public IReadOnlyList<IReadOnlyList<int>>? Games { get; init; }
+        public IReadOnlyList<IReadOnlyList<int?>>? Games { get; init; }
     }
 
     /// <summary>
@@ -406,6 +409,13 @@ namespace LiveTennisApi.Models
         /// <summary>Matches that carried any statistic.</summary>
         [JsonPropertyName("matches_with_stats")]
         public int? MatchesWithStats { get; init; }
+
+        /// <summary>
+        /// Matches whose measured statistics are held but stop short of the final,
+        /// or cannot be judged against it. Left out of every sum.
+        /// </summary>
+        [JsonPropertyName("matches_incomplete")]
+        public int? MatchesIncomplete { get; init; }
 
         /// <summary>Serve-side sums.</summary>
         [JsonPropertyName("serve")]

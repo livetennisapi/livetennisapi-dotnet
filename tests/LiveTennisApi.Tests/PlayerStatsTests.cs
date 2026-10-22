@@ -61,12 +61,41 @@ namespace LiveTennisApi.Tests
             Assert.Equal("retired", records.Recent[1].Outcome);
 
             var sr = stats.ServeReturn!;
+            Assert.Equal(40, sr.Matches);
             Assert.Equal(35, sr.MatchesWithStats);
+            Assert.Equal(5, sr.MatchesIncomplete);
             Assert.Equal(6.0, sr.Serve!.Aces!.PerMatch);
             Assert.Null(sr.Serve.DoubleFaults!.Total);
             Assert.Equal(0, sr.Serve.DoubleFaults.Matches);
             Assert.Equal(1500, sr.Serve.FirstServeIn!.Numerator);
             Assert.Null(sr.Return!.BreakPointsConverted!.Pct);
+        }
+
+        [Fact]
+        public async Task PlayerStats_NullGameAndIncompleteMatches_Decode()
+        {
+            // A null game count is unknown, not 0, and must keep its position in the set.
+            var handler = new StubHttpMessageHandler(_ => TestSupport.Ok(
+                "{\"player\":{\"id\":1},\"records\":{\"recent\":[{\"match_id\":7,\"won\":true,\"outcome\":\"completed\"," +
+                "\"score\":{\"sets\":[2,0],\"games\":[[6,null],[4,0]]}}]}," +
+                "\"serve_return\":{\"matches\":1,\"matches_with_stats\":0,\"matches_incomplete\":1}}"));
+            using var client = TestSupport.ClientOver(handler);
+
+            var stats = await client.GetPlayerStatsAsync(1);
+
+            var games = stats!.Records!.Recent![0].Score!.Games!;
+            Assert.Equal(2, games.Count);
+            Assert.Equal(2, games[0].Count);
+            Assert.Equal(6, games[0][0]);
+            Assert.Null(games[0][1]);
+            Assert.Equal(2, games[1].Count);
+            Assert.Equal(new int?[] { 4, 0 }, games[1]);
+
+            var sr = stats.ServeReturn!;
+            Assert.Equal(1, sr.Matches);
+            Assert.Equal(0, sr.MatchesWithStats);
+            Assert.Equal(1, sr.MatchesIncomplete);
+            Assert.Null(sr.Serve);
         }
 
         [Fact]
