@@ -29,6 +29,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   carried any statistic". It counts the matches whose measured statistics
   reach the final, the only ones that are summed. A match whose statistics
   stop short of the final counts under `MatchesIncomplete` instead.
+- **Score first.** Since 2026-10-23 every push-feed `score` frame carries
+  `model` beside `score` and a state leaves twice: `pending` the instant it
+  is accepted (the four model keys present and null) and `ready` once its
+  model run finished, both with the same `score.sequence`. Dedup on
+  `(match_id, score.sequence, model)`, and read a frame with no `model` as
+  `ready`. **`GetWsTokenAsync(modelFields: false)`** mints with
+  `?model_fields=off` for the score-only channels (one `off` frame per
+  state, model keys left out), which `WsToken.Channels` then names, and
+  **`WsToken.ModelFields`** echoes the switch. The parameterless overload is
+  unchanged.
+
 
 ## [1.3.0] - 2026-09-02
 

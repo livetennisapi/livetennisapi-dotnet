@@ -104,10 +104,23 @@ var client = new LiveTennisApiClient("twjp_your_key", new LiveTennisApiClientOpt
 | `GetMatchRallyAsync(matchId, …)` | `/history/matches/{id}/rally` | ULTRA |
 | `GetChartingPlayerAsync(name, gender)` | `/charting/players` | ULTRA |
 | `GetChartingMatchAsync(chartingMatchId)` | `/charting/matches/{id}` | ULTRA |
-| `GetWsTokenAsync()` | `/ws-token` | ULTRA |
+| `GetWsTokenAsync()`, `GetWsTokenAsync(modelFields)` | `/ws-token` | ULTRA |
 | `CreateWebhookAsync(url, events)` | `POST /webhooks` | ULTRA⁴ |
 | `ListWebhooksAsync()` | `/webhooks` | ULTRA⁴ |
 | `DeleteWebhookAsync(webhookId)` | `DELETE /webhooks/{id}` | ULTRA⁴ |
+
+**Score first (since 2026-10-23).** Every state leaves the push feed's score
+channels twice, and every `score` frame carries `model` beside `score`:
+`pending` the instant the state is accepted (the four model keys
+`win_probability_p1`, `danger`, `win_probability_p1_model`,
+`win_probability_meta` present and null) and `ready` once its model run
+finished, both with the same `score.sequence`. Dedup on
+`(match_id, score.sequence, model)`, apply each frame to the `sequence` it
+names, and read a frame with no `model` as `ready`. If you do not use the
+model fields, `GetWsTokenAsync(modelFields: false)` mints with `?model_fields=off`:
+`Channels` then names the score-only pair (`match:{match_id}:score_only` /
+`slate:score_only`), one `off` frame per state with the model keys left out,
+and `ModelFields` echoes `off`.
 
 ¹ `status=completed` needs BASIC+ (or any History plan).
 ² Or any History plan — History grants work on a FREE core key.

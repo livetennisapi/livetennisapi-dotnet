@@ -398,6 +398,46 @@ namespace LiveTennisApi.Tests
             Assert.Equal("wss://api.livetennisapi.com/connection/websocket", token.WsUrl);
             Assert.Equal("match:{match_id}", token.Channels!.Match);
             Assert.Equal("slate:all", token.Channels.Slate);
+            Assert.Equal("on", token.ModelFields);
+            Assert.DoesNotContain("model_fields", handler.Requests[0].Query);
+        }
+
+        [Fact]
+        public async Task WsToken_ModelFieldsOff_ReachesTheWireAndFollowsTheScoreOnlyVocabulary()
+        {
+            var handler = new StubHttpMessageHandler(_ => TestSupport.Ok(TestSupport.Fixture("ws_token_score_only.json")));
+            using var client = TestSupport.ClientOver(handler);
+
+            var token = await client.GetWsTokenAsync(modelFields: false);
+
+            Assert.Contains("model_fields=off", handler.Requests[0].Query);
+            Assert.Equal("off", token!.ModelFields);
+            Assert.Equal("match:{match_id}:score_only", token.Channels!.Match);
+            Assert.Equal("slate:score_only", token.Channels.Slate);
+        }
+
+        [Fact]
+        public async Task WsToken_ModelFieldsOn_SendsNoSwitch()
+        {
+            var handler = new StubHttpMessageHandler(_ => TestSupport.Ok(TestSupport.Fixture("ws_token.json")));
+            using var client = TestSupport.ClientOver(handler);
+
+            await client.GetWsTokenAsync(modelFields: true);
+
+            Assert.DoesNotContain("model_fields", handler.Requests[0].Query);
+        }
+
+        [Fact]
+        public async Task WsToken_WithoutTheEcho_DecodesNull()
+        {
+            // A server that predates the switch: the field is simply absent.
+            var handler = new StubHttpMessageHandler(_ => TestSupport.Ok("{\"token\":\"t\",\"channels\":{\"slate\":\"slate:all\"}}"));
+            using var client = TestSupport.ClientOver(handler);
+
+            var token = await client.GetWsTokenAsync();
+
+            Assert.Null(token!.ModelFields);
+            Assert.Equal("slate:all", token.Channels!.Slate);
         }
 
         // --- /history/packages ---------------------------------------------------

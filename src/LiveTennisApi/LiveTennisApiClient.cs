@@ -732,6 +732,27 @@ namespace LiveTennisApi
             GetAsync<WsToken>("/ws-token", null, cancellationToken);
 
         /// <summary>
+        /// Mints a push-feed token with the model-fields switch. <b>ULTRA.</b>
+        /// Since 2026-10-23 every state leaves the score channels twice, a
+        /// <c>model: pending</c> frame the instant it is accepted (model keys
+        /// null) and a <c>model: ready</c> frame once the model run finished.
+        /// Pass <paramref name="modelFields"/> <c>false</c> if you do not use the
+        /// model fields: the token is minted with <c>?model_fields=off</c>,
+        /// <see cref="WsToken.Channels"/> then names the score-only pair
+        /// (<c>match:{match_id}:score_only</c> / <c>slate:score_only</c>) with
+        /// one <c>model: off</c> frame per state and the model keys left out,
+        /// and <see cref="WsToken.ModelFields"/> echoes <c>off</c>.
+        /// </summary>
+        /// <param name="modelFields"><c>false</c> asks for the score-only channels.</param>
+        /// <param name="cancellationToken">A token to cancel the request.</param>
+        /// <returns>The token, or <c>null</c> if the body was empty.</returns>
+        public Task<WsToken?> GetWsTokenAsync(bool modelFields, CancellationToken cancellationToken = default) =>
+            GetAsync<WsToken>(
+                "/ws-token",
+                modelFields ? null : new[] { Param("model_fields", "off") },
+                cancellationToken);
+
+        /// <summary>
         /// Lists pre-built monthly bulk packages, newest period first.
         /// <b>PRO, or a package subscription</b>
         /// (<see cref="HistoryPackageKind.Rankings"/>,
