@@ -62,6 +62,87 @@ namespace LiveTennisApi.Tests
             Assert.Null(match.HasMarket);
         }
 
+        // is_qualifying is three-valued and pregame_forecasts is ULTRA only, on
+        // upcoming rows. Null means never stated, and an absent array stays null.
+        [Fact]
+        public async Task Matches_IsQualifyingAndPregameForecasts_Deserialize()
+        {
+            var body = "{\"data\":["
+                + "{\"id\":1,\"is_qualifying\":true,\"pregame_forecasts\":[{\"win_probability_p1\":0.58,\"stage\":\"pregame\"}]},"
+                + "{\"id\":2,\"is_qualifying\":false,\"pregame_forecasts\":[]},"
+                + "{\"id\":3,\"is_qualifying\":null},"
+                + "{\"id\":4}]}";
+            var handler = new StubHttpMessageHandler(_ => TestSupport.Ok(body));
+            using var client = TestSupport.ClientOver(handler);
+
+            var page = await client.ListMatchesAsync(MatchStatus.Upcoming);
+
+            Assert.True(page.Data[0].IsQualifying);
+            Assert.Single(page.Data[0].PregameForecasts!);
+            Assert.Equal(0.58, page.Data[0].PregameForecasts![0].GetProperty("win_probability_p1").GetDouble());
+
+            Assert.False(page.Data[1].IsQualifying);           // present-false: main draw, stated
+            Assert.NotNull(page.Data[1].PregameForecasts);     // empty is "no forecast yet", not null
+            Assert.Empty(page.Data[1].PregameForecasts!);
+
+            Assert.Null(page.Data[2].IsQualifying);            // null: never stated — not false
+            Assert.Null(page.Data[3].IsQualifying);
+            Assert.Null(page.Data[3].PregameForecasts);        // absent below ULTRA — never a guessed empty list
+        }
+
+        // --- Fixture model: the seven fields added through spec 1.13.82 --------
+
+        [Fact]
+        public async Task Fixtures_NewFields_Deserialize()
+        {
+            var body = "{\"data\":[{\"id\":87,\"status\":\"cancelled\",\"reason\":\"walkover\","
+                + "\"match_id\":48213,\"gender\":\"women\",\"is_qualifying\":false,"
+                + "\"created_at\":\"2026-09-23T08:00:00Z\",\"updated_at\":\"2026-09-24T10:30:00Z\","
+                + "\"pregame_forecasts\":[{\"win_probability_p1\":0.61,\"volatility_rating\":\"med\"}]}]}";
+            var handler = new StubHttpMessageHandler(_ => TestSupport.Ok(body));
+            using var client = TestSupport.ClientOver(handler);
+
+            var fixture = (await client.ListFixturesAsync()).Data[0];
+
+            Assert.Equal("walkover", fixture.Reason);          // status folds it into cancelled; reason names it
+            Assert.Equal(48213, fixture.MatchId);
+            Assert.Equal("women", fixture.Gender);
+            Assert.False(fixture.IsQualifying);                // present-false: stated main draw
+            Assert.Equal("2026-09-23T08:00:00Z", fixture.CreatedAt);
+            Assert.Equal("2026-09-24T10:30:00Z", fixture.UpdatedAt);
+            Assert.Single(fixture.PregameForecasts!);
+            Assert.Equal(0.61, fixture.PregameForecasts![0].GetProperty("win_probability_p1").GetDouble());
+            Assert.Equal("med", fixture.PregameForecasts[0].GetProperty("volatility_rating").GetString());
+        }
+
+        [Fact]
+        public async Task Fixtures_NewFields_NullAndAbsentStayNull()
+        {
+            var body = "{\"data\":["
+                + "{\"id\":88,\"reason\":null,\"match_id\":null,\"gender\":null,\"is_qualifying\":null,"
+                + "\"created_at\":null,\"updated_at\":null,\"pregame_forecasts\":[]},"
+                + "{\"id\":89}]}";
+            var handler = new StubHttpMessageHandler(_ => TestSupport.Ok(body));
+            using var client = TestSupport.ClientOver(handler);
+
+            var page = await client.ListFixturesAsync();
+
+            var nulls = page.Data[0];
+            Assert.Null(nulls.Reason);
+            Assert.Null(nulls.MatchId);                        // no match row yet
+            Assert.Null(nulls.Gender);                         // mixed event
+            Assert.Null(nulls.IsQualifying);                   // never stated — not false
+            Assert.Null(nulls.CreatedAt);
+            Assert.Null(nulls.UpdatedAt);
+            Assert.NotNull(nulls.PregameForecasts);            // empty is "no forecast yet", not null
+            Assert.Empty(nulls.PregameForecasts!);
+
+            var lower = page.Data[1];
+            Assert.Null(lower.PregameForecasts);               // absent below ULTRA
+            Assert.Null(lower.IsQualifying);
+            Assert.Null(lower.MatchId);
+        }
+
         // --- New list filters --------------------------------------------------
 
         [Fact]
