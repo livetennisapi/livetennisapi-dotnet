@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace LiveTennisApi.Models
@@ -71,5 +73,66 @@ namespace LiveTennisApi.Models
         /// <summary>Fixture status, or <c>null</c>. May be <c>finished</c> (see the type remarks).</summary>
         [JsonPropertyName("status")]
         public string? Status { get; init; }
+
+        /// <summary>
+        /// Why a fixture ended without being played out: <c>walkover</c>,
+        /// <c>retired</c>, <c>cancelled</c>, <c>default</c> or <c>postponed</c>.
+        /// <see cref="Status"/> folds the first four into <c>cancelled</c>; this
+        /// field names which one. <c>null</c> on a scheduled, live or finished
+        /// fixture.
+        /// </summary>
+        [JsonPropertyName("reason")]
+        public string? Reason { get; init; }
+
+        /// <summary>
+        /// The id of the match this fixture became, which every match route
+        /// accepts. <c>null</c> while no match exists yet — a fixture can publish
+        /// days before its match. Set when found and never cleared.
+        /// </summary>
+        [JsonPropertyName("match_id")]
+        public int? MatchId { get; init; }
+
+        /// <summary>
+        /// The sex of the event: <c>men</c> or <c>women</c>. <c>null</c> for mixed
+        /// doubles and mixed team events.
+        /// </summary>
+        [JsonPropertyName("gender")]
+        public string? Gender { get; init; }
+
+        /// <summary>
+        /// Whether the fixture is in the qualifying draw. Three-valued, like
+        /// <see cref="Match.IsQualifying"/>: <c>null</c> means never stated, and
+        /// <c>null</c> is not <c>false</c>. The qualifying draw is published under
+        /// the main draw's tournament name, so group a schedule on
+        /// <see cref="RoundCode"/> and this flag together.
+        /// </summary>
+        [JsonPropertyName("is_qualifying")]
+        public bool? IsQualifying { get; init; }
+
+        /// <summary>
+        /// When this row first existed, as an ISO 8601 UTC string, or <c>null</c>.
+        /// A value inside your polling window is a new row.
+        /// </summary>
+        [JsonPropertyName("created_at")]
+        public string? CreatedAt { get; init; }
+
+        /// <summary>
+        /// When this row last changed, as an ISO 8601 UTC string, or <c>null</c>.
+        /// A moved value with <see cref="CreatedAt"/> unchanged is a change to a
+        /// row you already hold, such as a re-listed start time.
+        /// </summary>
+        [JsonPropertyName("updated_at")]
+        public string? UpdatedAt { get; init; }
+
+        /// <summary>
+        /// The bound match's pre-match forecasts, oldest first (the Analysis
+        /// <c>profile</c> shape, raw JSON). <b>ULTRA only</b>;
+        /// the field is <b>absent</b> below that tier and deserializes to
+        /// <c>null</c>, so treat <c>null</c> as "not entitled", never as "no
+        /// forecast". Empty when the fixture has no <see cref="MatchId"/> yet or
+        /// no forecast has been written.
+        /// </summary>
+        [JsonPropertyName("pregame_forecasts")]
+        public IReadOnlyList<JsonElement>? PregameForecasts { get; init; }
     }
 }
