@@ -16,3 +16,12 @@ updates:
     groups:
       nuget-minor-patch:
         update-types: [minor, patch]
+    ignore:
+      # Hold System.Text.Json at 10.x. CI tests net8.0 only, so it never loads
+      # the package or the netstandard2.0 build that uses it. A trial run of the
+      # netstandard2.0 build with STJ 11 failed with MissingMethodException on
+      # JsonObjectInfoValues<T>.set_ObjectCreator (see #12).
+      # Drop this rule when CI covers the netstandard2.0 path, or when consumers
+      # move to STJ 11 anyway. 10.0.x patch updates still flow.
+      - dependency-name: System.Text.Json
+        versions: ['>=11.0.0']
