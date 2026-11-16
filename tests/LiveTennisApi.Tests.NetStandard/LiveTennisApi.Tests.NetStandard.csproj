@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Runs the same tests as LiveTennisApi.Tests against the netstandard2.0 build
+       of the library. That build is the one .NET Framework, Mono and Unity
+       consumers get. It uses the System.Text.Json package instead of the in-box
+       copy, and its own #if NETSTANDARD2_0 code paths, which the net8.0 tests
+       never load. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>LiveTennisApi.Tests</RootNamespace>
+    <!-- The System.Text.Json package targets net10.0+ and netstandard2.0. On this
+         net8.0 host it resolves to its netstandard2.0 asset, which is the point.
+         Silence the "not tested with net8.0" build warning for that reason. -->
+    <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.12.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../LiveTennisApi.Tests/*.cs" />
+    <EmbeddedResource Include="../LiveTennisApi.Tests/Fixtures/**/*.json"
+                      Link="Fixtures/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/LiveTennisApi/LiveTennisApi.csproj"
+                      SetTargetFramework="TargetFramework=netstandard2.0" />
+  </ItemGroup>
+
+</Project>
