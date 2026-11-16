@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace LiveTennisApi.Models
@@ -150,6 +152,26 @@ namespace LiveTennisApi.Models
         /// </summary>
         [JsonPropertyName("has_market")]
         public bool? HasMarket { get; init; }
+
+        /// <summary>
+        /// Whether this match belongs to the qualifying draw. Three-valued:
+        /// <c>null</c> means never stated, and <c>null</c> is not <c>false</c>.
+        /// The qualifying draw shares the main draw's tournament name and round
+        /// vocabulary, so branch on <see cref="RoundCode"/> and this flag
+        /// together.
+        /// </summary>
+        [JsonPropertyName("is_qualifying")]
+        public bool? IsQualifying { get; init; }
+
+        /// <summary>
+        /// The match's pre-match forecasts, oldest first (the Analysis
+        /// <c>profile</c> shape, raw JSON). <b>ULTRA only</b>, on
+        /// <c>status=upcoming</c> list rows; the field is <b>absent</b> below
+        /// that tier and on other statuses, and deserializes to <c>null</c>.
+        /// Empty when no forecast has been written yet.
+        /// </summary>
+        [JsonPropertyName("pregame_forecasts")]
+        public IReadOnlyList<JsonElement>? PregameForecasts { get; init; }
 
         /// <summary>Embedded market. <b>PRO+ only</b>; <c>null</c> below that tier.</summary>
         [JsonPropertyName("market")]
